@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+@layer components {
+    .btn-primary {
+        @apply bg-primary-600 text-white px-4 py-3 rounded-button font-medium hover:bg-primary-700 active:scale-[0.98] transition-all duration-200;
+    }
+
+    .btn-secondary {
+        @apply bg-white text-gray-700 px-4 py-3 rounded-button font-medium border border-gray-200 hover:bg-gray-50 active:scale-[0.98] transition-all duration-200;
+    }
+
+    .card {
+        @apply bg-white rounded-card shadow-sm border border-gray-100 overflow-hidden;
+    }
+
+    .section-title {
+        @apply text-lg font-bold text-gray-900 mb-4;
+    }
+
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Hide scrollbar for IE, Edge and Firefox */
+    .no-scrollbar {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+    }
+}
