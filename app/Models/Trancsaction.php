@@ -19,7 +19,7 @@ class Trancsaction extends Model
         'amount',
         'total_paid',
         'payment_method',     // qris/bank_transfer/ewallet/balance
-        'payment_provider',   // (patch) tokopay/midtrans/manual
+        'payment_provider',   // (patch) tokopay/midtrans
         'payment_reference',
         'reff_id',            // (patch) reff_id tokopay
         'payment_url',
@@ -45,7 +45,6 @@ class Trancsaction extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(TransactionItem::class, 'transaction_id'); 
+        return $this->hasMany(TransactionItem::class, 'transaction_id');
     }
-
 }

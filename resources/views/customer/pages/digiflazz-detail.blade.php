@@ -277,7 +277,6 @@
 
     <script>
         let selectedNominalId = null;
-        let isAutoSelecting = false;
 
         function handleNominalClick(nominalId) {
             // Check stock first
@@ -306,18 +305,14 @@
                     formValid = false;
                     input.classList.add('border-red-500');
                     input.classList.remove('border-gray-300');
-
-                    // Only show alert if not auto-selecting
-                    if (!isAutoSelecting) {
-                        input.focus();
-                    }
+                    input.focus();
                 } else {
                     input.classList.remove('border-red-500');
                     input.classList.add('border-gray-300');
                 }
             });
 
-            if (!formValid && !isAutoSelecting) {
+            if (!formValid) {
                 alert('Harap isi semua data yang diperlukan terlebih dahulu');
             }
 
@@ -371,35 +366,15 @@
             // Build URL parameters
             let params = `?nominal_id=${selectedNominalId}`;
             formData.forEach((value, key) => {
-                params += `&${key}=${encodeURIComponent(value)}`;
+                if (value.trim()) {
+                    params += `&${key}=${encodeURIComponent(value)}`;
+                }
             });
 
-            // Redirect to checkout
-            window.location.href =
-                `{{ route('checkout.create', ['product_slug' => $product->slug]) }}${params}`;
+            // Redirect ke checkout
+            window.location.href = `{{ route('checkout.create', ['product_slug' => $product->slug]) }}${params}`;
         });
 
-        // Auto-select if only one nominal (HAPUS atau MODIFIKASI)
-        // @if ($nominals->count() === 1)
-        //     window.addEventListener('DOMContentLoaded', function() {
-        //         const nominalId = {{ $nominals->first()->id }};
-        //         const nominalButton = document.querySelector(`[data-nominal-id="${nominalId}"]`);
-
-        //         if (!nominalButton.disabled) {
-        //             isAutoSelecting = true;
-        //             // Don't validate form for auto-select
-        //             selectNominal(nominalId);
-        //             isAutoSelecting = false;
-
-        //             // Show message that nominal is auto-selected
-        //             setTimeout(() => {
-        //                 alert('Hanya ada 1 nominal tersedia, silakan isi form dan klik Lanjutkan');
-        //             }, 1000);
-        //         }
-        //     });
-        // @endif
-
-        // Alternative: Auto-select only when form is filled
         @if ($nominals->count() === 1)
             document.querySelectorAll('#customerForm input').forEach(input => {
                 input.addEventListener('input', function() {

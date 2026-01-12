@@ -67,8 +67,26 @@ class UserController extends Controller
                 ->withInput();
         }
 
-        // Login user (using Laravel Auth)
         Auth::login($user, $request->has('remember'));
+
+        // Cek pending checkout setelah login berhasil
+        if (session()->has('pending_checkout')) {
+            $pendingData = session('pending_checkout');
+            $params = http_build_query([
+                'nominal_id' => $pendingData['nominal_id'] ?? null,
+                'phone' => $pendingData['phone'] ?? null,
+                'customer_id' => $pendingData['customer_id'] ?? null
+            ]);
+
+            session()->forget('pending_checkout');
+
+            return redirect()->route('checkout.create', [
+                'product_slug' => $pendingData['product_slug']
+            ]) . ($params ? '?' . $params : '');
+        }
+
+        return redirect()->intended('/')
+            ->with('success', 'Login berhasil! Selamat datang ' . $user->name);
 
         // Redirect to intended page or home
         return redirect()->intended('/')

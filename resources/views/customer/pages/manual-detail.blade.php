@@ -18,9 +18,6 @@
                         <li>
                             <i class='bx bx-chevron-right text-gray-400 text-xs'></i>
                         </li>
-                        <li>
-                            <i class='bx bx-chevron-right text-gray-400 text-xs'></i>
-                        </li>
                         <li class="text-gray-900 font-medium truncate max-w-[150px]">
                             {{ $product->name }}
                         </li>
@@ -37,22 +34,19 @@
                             <div class="rounded-lg overflow-hidden bg-white border border-gray-200 shadow-sm">
                                 @if ($product->image)
                                     <div
-                                        class="bg-white flex items-center justify-center
-                  h-[180px] sm:h-[200px] md:h-[220px] lg:h-[240px]">
+                                        class="bg-white flex items-center justify-center h-[180px] sm:h-[200px] md:h-[220px] lg:h-[240px]">
                                         <img src="{{ asset($product->image) }}" alt="{{ $product->name }}"
                                             class="object-contain max-h-full max-w-[220px] sm:max-w-[240px] md:max-w-[260px]"
                                             onerror="this.onerror=null; this.src='{{ asset('storage/' . $product->image) }}';">
                                     </div>
                                 @else
                                     <div
-                                        class="bg-white flex items-center justify-center
-                  h-[180px] sm:h-[200px] md:h-[220px] lg:h-[240px]">
-                                        <i class='bx bx-flash text-gray-500 text-5xl'></i>
+                                        class="bg-white flex items-center justify-center h-[180px] sm:h-[200px] md:h-[220px] lg:h-[240px]">
+                                        <i class='bx bx-game text-gray-500 text-5xl'></i>
                                     </div>
                                 @endif
                             </div>
                         </div>
-
 
                         <!-- Product Info -->
                         <div class="md:w-2/3">
@@ -60,12 +54,12 @@
                                 <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ $product->name }}</h1>
                                 <div class="flex items-center gap-2 mb-4">
                                     <span
-                                        class="inline-flex items-center bg-green-50 text-green-700 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                                        <i class='bx bx-bolt mr-1'></i> Otomatis
+                                        class="inline-flex items-center bg-yellow-50 text-yellow-700 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                        <i class='bx bx-user-check mr-1'></i> Manual
                                     </span>
                                     <span
                                         class="inline-flex items-center bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                                        <i class='bx bx-time mr-1'></i> Instan
+                                        <i class='bx bx-time mr-1'></i> 1-10 Menit
                                     </span>
                                 </div>
                                 <p class="text-gray-600 text-sm leading-relaxed">
@@ -74,17 +68,19 @@
                             </div>
 
                             <!-- Info Section -->
-                            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                                 <div class="flex items-start">
-                                    <i class='bx bx-info-circle text-green-500 mt-1 mr-3 text-lg'></i>
+                                    <i class='bx bx-info-circle text-yellow-500 mt-1 mr-3 text-lg'></i>
                                     <div>
-                                        <h4 class="font-bold text-green-800 mb-1 text-sm">💡 Cara Pembelian</h4>
-                                        <p class="text-green-600 text-xs leading-relaxed">
+                                        <h4 class="font-bold text-yellow-800 mb-1 text-sm">💡 Cara Pembelian Produk Manual
+                                        </h4>
+                                        <p class="text-yellow-600 text-xs leading-relaxed">
                                             1. Pilih nominal yang diinginkan<br>
                                             2. Klik tombol "Lanjutkan ke Pembayaran"<br>
-                                            3. Isi data Anda di halaman checkout<br>
-                                            4. Selesaikan pembayaran<br>
-                                            5. Produk akan dikirim otomatis
+                                            3. Selesaikan pembayaran via QRIS<br>
+                                            4. Admin akan menghubungi Anda via WhatsApp<br>
+                                            5. Berikan data akun kepada admin<br>
+                                            6. Tunggu proses pengisian (1-10 menit)
                                         </p>
                                     </div>
                                 </div>
@@ -156,13 +152,6 @@
                                         @endif
                                     </div>
 
-                                    <!-- Tag Info -->
-                                    @if ($nominal->price <= 20000)
-                                        <div class="text-xs text-gray-600">
-                                            Tanpa Potongan Admin
-                                        </div>
-                                    @endif
-
                                     <!-- Stock Info -->
                                     @if ($nominal->available_stock <= 5 && $nominal->available_stock > 0)
                                         <div class="text-xs text-red-600 font-medium mt-2">
@@ -182,28 +171,28 @@
                                         <i class='bx bx-money text-green-600'></i>
                                     </div>
                                     <div>
-                                        <h4 class="text-sm font-medium text-gray-900 mb-1">Lebih Murah</h4>
-                                        <p class="text-xs text-gray-600">Hemat hingga 39% tanpa biaya admin tambahan</p>
+                                        <h4 class="text-sm font-medium text-gray-900 mb-1">Harga Terjangkau</h4>
+                                        <p class="text-xs text-gray-600">Harga kompetitif dengan kualitas terbaik</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3">
+                                    <div
+                                        class="flex-shrink-0 w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                                        <i class='bx bx-user-check text-yellow-600'></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-medium text-gray-900 mb-1">Proses Manual</h4>
+                                        <p class="text-xs text-gray-600">Admin akan bantu input data Anda</p>
                                     </div>
                                 </div>
                                 <div class="flex items-start gap-3">
                                     <div
                                         class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                        <i class='bx bx-bolt text-blue-600'></i>
+                                        <i class='bx bx-support text-blue-600'></i>
                                     </div>
                                     <div>
-                                        <h4 class="text-sm font-medium text-gray-900 mb-1">Mudah & Otomatis</h4>
-                                        <p class="text-xs text-gray-600">Tidak perlu kirim bukti pembayaran</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-start gap-3">
-                                    <div
-                                        class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                                        <i class='bx bx-time text-purple-600'></i>
-                                    </div>
-                                    <div>
-                                        <h4 class="text-sm font-medium text-gray-900 mb-1">Tanpa Delay</h4>
-                                        <p class="text-xs text-gray-600">Pengiriman hanya hitungan detik</p>
+                                        <h4 class="text-sm font-medium text-gray-900 mb-1">Bantuan Admin</h4>
+                                        <p class="text-xs text-gray-600">Admin siap membantu via WhatsApp</p>
                                     </div>
                                 </div>
                             </div>
@@ -220,18 +209,8 @@
                 </div>
 
                 <!-- Selected Nominal & CTA -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8" id="selectedSection">
-                    <div class="text-center">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4" id="selectedTitle">Pilih nominal terlebih
-                            dahulu</h3>
-
-                        <div class="mb-6" id="selectedNominalInfo" style="display: none;">
-                            <div class="bg-gray-50 rounded-lg p-4 inline-block">
-                                <div class="text-2xl font-bold text-green-600" id="selectedPrice"></div>
-                                <div class="text-gray-800 font-medium text-sm" id="selectedName"></div>
-                            </div>
-                        </div>
-
+                <div class="sticky bottom-0 bg-white border-t border-gray-200 p-4 -mx-4 -mb-6 mt-8">
+                    <div class="max-w-4xl mx-auto">
                         <button id="checkoutBtn"
                             class="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-3.5 px-4 rounded-lg shadow transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                             disabled>
@@ -265,26 +244,8 @@
             // Add selection style
             nominalButton.classList.add('border-green-500', 'bg-green-50', 'ring-1', 'ring-green-200');
 
-            // Update selected section
-            updateSelectedSection(nominalId);
-
             // Enable checkout button
             document.getElementById('checkoutBtn').disabled = false;
-        }
-
-        function updateSelectedSection(nominalId) {
-            const nominalButton = document.querySelector(`[data-nominal-id="${nominalId}"]`);
-
-            // Get nominal details
-            const nominalName = nominalButton.querySelector('.font-medium').textContent;
-            const priceElement = nominalButton.querySelector('.text-lg.font-bold');
-            const price = priceElement.textContent.replace('Rp ', '').replace(/\./g, '');
-
-            // Update UI
-            document.getElementById('selectedTitle').textContent = 'Nominal Terpilih';
-            document.getElementById('selectedName').textContent = nominalName;
-            document.getElementById('selectedPrice').textContent = `Rp ${parseInt(price).toLocaleString('id-ID')}`;
-            document.getElementById('selectedNominalInfo').style.display = 'block';
         }
 
         // Checkout button handler
@@ -295,37 +256,15 @@
             const isLoggedIn = {{ auth()->check() ? 'true' : 'false' }};
 
             if (!isLoggedIn) {
-                // Show login modal
-                showLoginModal(selectedNominalId);
+                // Redirect to checkout (middleware akan handle redirect ke login)
+                window.location.href =
+                    `{{ route('checkout.create', ['product_slug' => $product->slug]) }}?nominal_id=${selectedNominalId}&product_type=manual`;
             } else {
                 // User is logged in, proceed to checkout
-                proceedToCheckout(selectedNominalId);
+                window.location.href =
+                    `{{ route('checkout.create', ['product_slug' => $product->slug]) }}?nominal_id=${selectedNominalId}&product_type=manual`;
             }
         });
-
-        function showLoginModal(nominalId) {
-            // Show the login modal
-            const loginModal = document.getElementById('loginModal');
-            if (loginModal) {
-                loginModal.classList.remove('hidden');
-                loginModal.classList.add('flex');
-
-                // Store nominalId for after login
-                loginModal.dataset.nominalId = nominalId;
-
-                // Add event listener for successful login
-                loginModal.addEventListener('login-success', function() {
-                    // After successful login, proceed to checkout
-                    proceedToCheckout(this.dataset.nominalId);
-                });
-            }
-        }
-
-        function proceedToCheckout(nominalId) {
-            // Redirect to checkout
-            window.location.href =
-                `{{ route('checkout.create', ['product_slug' => $product->slug]) }}?nominal_id=${nominalId}`;
-        }
 
         // Auto-select if only one nominal
         @if ($nominals->count() === 1)
@@ -334,115 +273,27 @@
                 const nominalButton = document.querySelector(`[data-nominal-id="${nominalId}"]`);
 
                 if (!nominalButton.disabled) {
-                    // Wait a bit for better UX
-                    setTimeout(() => {
-                        selectNominal(nominalId);
-                    }, 300);
+                    // Auto select the only available nominal
+                    selectNominal(nominalId);
                 }
             });
         @endif
     </script>
 
-    <!-- Modal Login Script Integration -->
-    <script>
-        // Event listener for login success
-        document.addEventListener('login-success', function(e) {
-            console.log('Login successful, proceeding to checkout...');
-
-            // Get stored nominal ID
-            const loginModal = document.getElementById('loginModal');
-            const nominalId = loginModal?.dataset.nominalId;
-
-            if (nominalId) {
-                proceedToCheckout(nominalId);
-            }
-        });
-
-        // Function to handle login (to be called from modal)
-        window.handleLogin = function(formData) {
-            // Use fetch API for login
-            fetch('{{ url('/auth/login') }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify(formData)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Hide modal
-                        const loginModal = document.getElementById('loginModal');
-                        if (loginModal) {
-                            loginModal.classList.add('hidden');
-                            loginModal.classList.remove('flex');
-                        }
-
-                        // Trigger login success event
-                        const event = new CustomEvent('login-success');
-                        document.dispatchEvent(event);
-
-                        // Show success message
-                        showToast(data.message, 'success');
-                    } else {
-                        // Show error
-                        showToast(data.message, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Login error:', error);
-                    showToast('Terjadi kesalahan saat login', 'error');
-                });
-        }
-
-        function showToast(message, type = 'success') {
-            // Create toast element
-            const toast = document.createElement('div');
-            toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center ${
-                type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-            }`;
-            toast.innerHTML = `
-                <i class='bx ${type === 'success' ? 'bx-check-circle' : 'bx-error-circle'} text-xl mr-2'></i>
-                <span>${message}</span>
-            `;
-
-            document.body.appendChild(toast);
-
-            // Remove after 3 seconds
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
-    </script>
-
     <style>
-        /* Smooth transitions */
         button[data-nominal-id]:not([disabled]):hover {
             transform: translateY(-1px);
             transition: all 0.2s ease;
         }
 
-        /* Selected state */
         button[data-nominal-id].border-green-500 {
             border-width: 2px;
         }
 
-        /* Animation for selection */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
+        @media (max-width: 640px) {
+            .container {
+                padding-bottom: 80px;
             }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        #selectedNominalInfo {
-            animation: fadeIn 0.3s ease-out;
         }
     </style>
 @endsection

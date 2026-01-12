@@ -105,72 +105,41 @@
                 </div>
             </div>
 
-            <!-- Features Bar - Modern dengan 4 fitur -->
-            <div class="bg-white border-b border-gray-100 py-3 sm:py-4">
-                <div class="overflow-x-auto">
-                    <!-- Tambahkan container dengan mx-auto dan max-w-... -->
-                    <div class="min-w-max px-3 sm:px-4 mx-auto max-w-4xl lg:max-w-6xl">
-                        <!-- Tambahkan justify-center untuk desktop saja -->
-                        <div class="flex items-center space-x-3 sm:space-x-4 justify-center md:justify-center">
-                            <!-- Resmi -->
-                            <div
-                                class="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200 hover:border-blue-300 transition-all duration-300 hover:shadow-md min-w-[140px] sm:min-w-[160px] flex-shrink-0">
-                                <div class="flex-shrink-0">
-                                    <div
-                                        class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                                        <i class='bx bx-badge-check text-white text-sm sm:text-base'></i>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-gray-900 text-xs sm:text-sm">RESMI</h3>
-                                    <p class="text-gray-600 text-xs">Partner Terverifikasi</p>
-                                </div>
+            <!-- Features Bar - Minimalist -->
+            <div class="bg-white border-b border-gray-100 py-3">
+                <div class="px-4">
+                    <div class="flex items-center justify-around">
+                        <!-- Mobile: icon saja, Desktop: icon + text -->
+                        <div class="flex flex-col items-center">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center mb-1">
+                                <i class='bx bx-badge-check text-blue-600 text-sm'></i>
                             </div>
+                            <span class="text-[10px] font-medium text-gray-700 md:hidden">RESMI</span>
+                            <span class="hidden md:block text-xs text-gray-600">Resmi</span>
+                        </div>
 
-                            <!-- Cepat -->
-                            <div
-                                class="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gradient-to-r from-green-50 to-green-100 rounded-lg border border-green-200 hover:border-green-300 transition-all duration-300 hover:shadow-md min-w-[140px] sm:min-w-[160px] flex-shrink-0">
-                                <div class="flex-shrink-0">
-                                    <div
-                                        class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
-                                        <i class='bx bx-rocket text-white text-sm sm:text-base'></i>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-gray-900 text-xs sm:text-sm">CEPAT</h3>
-                                    <p class="text-gray-600 text-xs">Proses Instan</p>
-                                </div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center mb-1">
+                                <i class='bx bx-rocket text-green-600 text-sm'></i>
                             </div>
+                            <span class="text-[10px] font-medium text-gray-700 md:hidden">CEPAT</span>
+                            <span class="hidden md:block text-xs text-gray-600">Cepat</span>
+                        </div>
 
-                            <!-- Murah -->
-                            <div
-                                class="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg border border-yellow-200 hover:border-yellow-300 transition-all duration-300 hover:shadow-md min-w-[140px] sm:min-w-[160px] flex-shrink-0">
-                                <div class="flex-shrink-0">
-                                    <div
-                                        class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 flex items-center justify-center">
-                                        <i class='bx bx-dollar-circle text-white text-sm sm:text-base'></i>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-gray-900 text-xs sm:text-sm">MURAH</h3>
-                                    <p class="text-gray-600 text-xs">Harga Terjangkau</p>
-                                </div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center mb-1">
+                                <i class='bx bx-dollar-circle text-yellow-600 text-sm'></i>
                             </div>
+                            <span class="text-[10px] font-medium text-gray-700 md:hidden">MURAH</span>
+                            <span class="hidden md:block text-xs text-gray-600">Murah</span>
+                        </div>
 
-                            <!-- CS 24/7 -->
-                            <div
-                                class="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg border border-purple-200 hover:border-purple-300 transition-all duration-300 hover:shadow-md min-w-[140px] sm:min-w-[160px] flex-shrink-0">
-                                <div class="flex-shrink-0">
-                                    <div
-                                        class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
-                                        <i class='bx bx-headphone text-white text-sm sm:text-base'></i>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h3 class="font-bold text-gray-900 text-xs sm:text-sm">CS 24/7</h3>
-                                    <p class="text-gray-600 text-xs">Support Selalu Ada</p>
-                                </div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center mb-1">
+                                <i class='bx bx-headphone text-purple-600 text-sm'></i>
                             </div>
+                            <span class="text-[10px] font-medium text-gray-700 md:hidden">CS 24/7</span>
+                            <span class="hidden md:block text-xs text-gray-600">CS 24/7</span>
                         </div>
                     </div>
                 </div>

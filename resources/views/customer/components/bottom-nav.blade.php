@@ -1,7 +1,7 @@
 <div class="bg-white border-t border-gray-200 shadow-lg">
     <div class="flex justify-around items-center h-16">
         <!-- Beranda -->
-        <a href="{{ route('orders.index') }}" class="flex flex-col items-center justify-center text-primary">
+        <a href="{{ route('home') }}" class="flex flex-col items-center justify-center text-primary">
             <i class='bx bx-home text-2xl'></i>
             <span class="text-xs mt-1">Beranda</span>
         </a>

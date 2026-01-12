@@ -31,7 +31,7 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-        'tokopay' => [
+    'tokopay' => [
         'base_url' => env('TOKOPAY_BASE_URL', 'https://api.tokopay.id'), // sesuaikan
         'api_key'  => env('TOKOPAY_API_KEY'),
         'timeout'  => env('TOKOPAY_TIMEOUT', 20),
@@ -54,6 +54,15 @@ return [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
         'timeout'   => env('TELEGRAM_TIMEOUT', 15),
         'chat_id'   => env('TELEGRAM_CHAT_ID'),
+    ],
+
+    'midtrans' => [
+        'server_key' => env('MIDTRANS_SERVER_KEY'),
+        'client_key' => env('MIDTRANS_CLIENT_KEY'),
+        'merchant_id' => env('MIDTRANS_MERCHANT_ID'),
+        'is_production' => env('MIDTRANS_IS_PRODUCTION', false),
+        'is_sanitized' => true,
+        'is_3ds' => true,
     ],
 
 

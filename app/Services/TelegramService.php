@@ -2,40 +2,55 @@
 
 namespace App\Services;
 
-use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class TelegramService
 {
-    private string $token;
-    private string $baseUrl;
-    private int $timeout;
+    protected $botToken;
+    protected $chatId;
 
     public function __construct()
     {
-        $this->token   = config('services.telegram.bot_token');
-        $this->timeout = (int) config('services.telegram.timeout', 15);
-        $this->baseUrl = 'https://api.telegram.org/bot' . $this->token;
+        $this->botToken = config('services.telegram.bot_token');
+        $this->chatId = config('services.telegram.admin_chat_id');
     }
 
-    public function sendMessage(string|int $chatId, string $text): array
+    public function sendMessage($text)
     {
-        $response = Http::asJson()
-            ->timeout($this->timeout)
-            ->post($this->baseUrl . '/sendMessage', [
-                'chat_id' => $chatId,
-                'text'    => $text,
-            ]);
-
-        return $this->handleJson($response);
-    }
-
-    private function handleJson(Response $response): array
-    {
-        if ($response->successful()) {
-            return $response->json() ?? [];
+        if (!$this->botToken || !$this->chatId) {
+            return false;
         }
 
-        throw new \RuntimeException('Telegram API error: ' . $response->status() . ' ' . $response->body());
+        try {
+            $response = Http::post("https://api.telegram.org/bot{$this->botToken}/sendMessage", [
+                'chat_id' => $this->chatId,
+                'text' => $text,
+                'parse_mode' => 'HTML'
+            ]);
+
+            return $response->successful();
+        } catch (\Exception $e) {
+            Log::error('Telegram Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function sendNewTransaction($transaction)
+    {
+        $product = $transaction->items[0]->product;
+        $nominal = $transaction->items[0]->nominal;
+
+        $message = "🆕 <b>TRANSAKSI BARU</b>\n\n";
+        $message .= "Invoice: <code>{$transaction->invoice}</code>\n";
+        $message .= "Customer: {$transaction->user->name}\n";
+        $message .= "Produk: {$product->name}\n";
+        $message .= "Nominal: {$nominal->name}\n";
+        $message .= "Total: Rp " . number_format($transaction->amount, 0, ',', '.') . "\n";
+        $message .= "Status: {$transaction->status}\n\n";
+
+        $message .= "💰 <a href='" . route('admin.transactions.show', $transaction->id) . "'>LIHAT DETAIL</a>";
+
+        $this->sendMessage($message);
     }
 }

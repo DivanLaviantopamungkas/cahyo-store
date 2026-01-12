@@ -3,325 +3,564 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Models\Product;
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Payment;
-use App\Models\Voucher;
 use App\Models\Provider;
-use App\Services\TokopayService;
+use App\Models\ProviderProduct;
+use App\Models\Trancsaction;
+use App\Models\TransactionItem;
+use App\Models\ProductNominal;
+use App\Services\MidtransService;
 use App\Services\DigiflazzService;
 use App\Services\TelegramService;
-use App\Services\WhatsappService;
+use App\Services\WhatsAppService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 use App\Http\Controllers\Controller;
-use App\Models\ProductNominal;
-use App\Models\Trancsaction;
-use App\Models\TransactionItem;
 
 class CheckoutController extends Controller
 {
+    protected $midtransService;
+    protected $telegramService;
+    protected $whatsappService;
+
+    // DigiflazzService akan di-instantiate sesuai provider
+
     public function __construct()
     {
-        $this->middleware('auth:sanctum')->except(['index', 'create']);
+        $this->midtransService = new MidtransService();
+        $this->telegramService = new TelegramService();
+        $this->whatsappService = new WhatsAppService();
     }
+
     /**
-     * Halaman checkout untuk single product (dari detail produk)
+     * Step 1: Create checkout page
      */
     public function create(Request $request, $product_slug)
     {
-        // Cari produk berdasarkan slug
+        // Ambil data dari session jika ada
+        $sessionData = session('pending_checkout', []);
+
+        $nominal_id = $request->get('nominal_id') ?? ($sessionData['nominal_id'] ?? null);
+        $phone = $request->get('phone') ?? ($sessionData['phone'] ?? null);
+        $customer_id = $request->get('customer_id') ?? ($sessionData['customer_id'] ?? null);
+
+        session()->forget('pending_checkout');
+
+        // Cari produk
         $product = Product::where('slug', $product_slug)->firstOrFail();
 
-        // Validasi parameter nominal_id
-        $nominalId = $request->query('nominal_id');
-        if (!$nominalId) {
-            return redirect()->route('product.show', $product_slug)
-                ->with('error', 'Silakan pilih nominal terlebih dahulu.');
+        // Validasi nominal_id
+        if (!$nominal_id) {
+            return redirect()->back()
+                ->with('error', 'Nominal tidak ditemukan');
         }
 
         // Cari nominal
-        $nominal = ProductNominal::where('id', $nominalId)
-            ->where('product_id', $product->id)
-            ->where('available_stock', '>', 0)
-            ->firstOrFail();
+        $nominal = $product->nominals()->findOrFail($nominal_id);
 
-        // Validasi input dari form
-        $formData = $request->only(['phone', 'customer_id']);
-
-        // Validasi: pastikan ada phone number untuk produk yang butuh
-        if (in_array($product->type, ['pulsa', 'data', 'e-wallet']) && empty($formData['phone'])) {
-            return redirect()->route('product.show', $product_slug)
-                ->with('error', 'Nomor handphone harus diisi.')
-                ->withInput();
+        // Validasi stok
+        if (!$product->is_digiflazz && $nominal->available_stock == 0) {
+            return redirect()->back()
+                ->with('error', 'Maaf, stok untuk nominal ini habis');
         }
 
-        if ($product->type === 'pln' && empty($formData['customer_id'])) {
-            return redirect()->route('product.show', $product_slug)
-                ->with('error', 'Nomor ID Pelanggan harus diisi.')
-                ->withInput();
-        }
-
-        // Simpan data ke session untuk sementara
-        session(['single_checkout' => [
-            'product_id' => $product->id,
-            'nominal_id' => $nominal->id,
-            'form_data' => $formData,
-            'quantity' => 1
-        ]]);
-
-        // Redirect ke halaman checkout (index)
-        return redirect()->route('checkout.index');
+        return view('customer.pages.checkout', compact('product', 'nominal', 'phone', 'customer_id'));
     }
 
     /**
-     * Halaman checkout utama (handle single product & cart)
+     * Step 2: Store transaction & initiate payment
      */
-    public function index(Request $request)
+    public function store(Request $request)
     {
-        // Ambil data cart dari session
-        $cartItems = session('cart', []);
-
-        // Jika cart kosong, redirect ke cart
-        if (empty($cartItems)) {
-            return redirect()->route('cart.index')->with('error', 'Keranjang belanja kosong.');
-        } //ini aku ga pake cart ya
-
-        // Hitung total
-        $total = 0;
-        foreach ($cartItems as $item) {
-            $total += $item['price'] * $item['quantity'];
-        }
-
-        // Cek apakah single product
-        $singleProduct = count($cartItems) === 1;
-
-        // Cek apakah butuh recipient number
-        $needsRecipient = false;
-        foreach ($cartItems as $item) {
-            if (in_array($item['type'], ['digiflazz', 'transfer'])) {
-                $needsRecipient = true;
-                break;
-            }
-        }
-
-        return view('customer.pages.checkout', compact('cartItems', 'total', 'singleProduct', 'needsRecipient'));
-    }
-
-    /**
-     * Proses checkout (menyimpan transaction)
-     */
-    public function process(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
-            'recipient_numbers' => 'sometimes|array',
-            'recipient_numbers.*' => 'required_if:needs_recipient,true|string|max:20'
-        ]);
-
-        // Ambil data cart
-        $singleCheckout = session('single_checkout');
-        $cart = session('cart', []);
-
-        if (!$singleCheckout && empty($cart)) {
-            return redirect()->route('products.index')
-                ->with('error', 'Tidak ada item untuk diproses.');
-        }
-
         try {
-            // Generate invoice number
-            $invoice = 'INV-' . date('Ymd') . '-' . strtoupper(substr(md5(time()), 0, 6));
+            Log::info('Checkout store called', $request->all());
 
-            // Buat transaction
+            $user = Auth::user();
+            $product = Product::findOrFail($request->product_id);
+            $nominal = ProductNominal::findOrFail($request->nominal_id);
+
+            // Generate invoice
+            $invoice = 'INV-' . strtoupper(Str::random(8)) . '-' . time();
+            $amount = $nominal->discount_price ?? $nominal->price;
+
+            DB::beginTransaction();
+
+            // Buat transaksi
             $transaction = Trancsaction::create([
                 'invoice' => $invoice,
-                'user_id' => auth()->id(),
-                'amount' => 0, // akan diupdate nanti
-                'total_paid' => 0,
+                'user_id' => $user->id,
+                'amount' => $amount,
                 'payment_method' => 'qris',
-                'payment_provider' => 'tokopay',
+                'payment_provider' => 'midtrans',
                 'status' => 'pending',
-                'expired_at' => now()->addHours(2)
+                'expired_at' => Carbon::now()->addMinutes(15),
             ]);
 
-            $totalAmount = 0;
+            // Buat transaction item
+            TransactionItem::create([
+                'transaction_id' => $transaction->id,
+                'product_id' => $product->id,
+                'product_nominal_id' => $nominal->id,
+                'quantity' => 1,
+                'price' => $amount,
+                'total' => $amount,
+                'status' => 'pending',
+                'fulfillment_source' => $product->is_digiflazz ? 'digiflazz' : 'manual',
+                'phone' => $request->phone,
+                'customer_id' => $request->customer_id,
+            ]);
 
-            if ($singleCheckout) {
-                // Proses single product
-                $product = Product::findOrFail($singleCheckout['product_id']);
-                $nominal = ProductNominal::findOrFail($singleCheckout['nominal_id']);
+            // Panggil Midtrans
+            $paymentResult = $this->midtransService->createQRISPayment(
+                $transaction->invoice,
+                $amount,
+                $user->name,
+                $user->email,
+                $user->phone
+            );
 
-                $price = $nominal->discount_price ?? $nominal->price;
-                $totalAmount = $price;
+            if (!$paymentResult['success']) {
+                throw new \Exception('Midtrans error: ' . ($paymentResult['message'] ?? 'Unknown error'));
+            }
 
-                // Ambil nomor tujuan
-                $recipientNo = null;
-                if (in_array($product->type, ['pulsa', 'data', 'e-wallet'])) {
-                    $recipientNo = $singleCheckout['form_data']['phone'] ?? null;
-                } elseif ($product->type === 'pln') {
-                    $recipientNo = $singleCheckout['form_data']['customer_id'] ?? null;
-                }
+            // Update dengan payment data
+            $transaction->update([
+                'payment_url' => $paymentResult['redirect_url'] ?? null,
+                'payment_payload' => json_encode($paymentResult),
+            ]);
 
-                // Tentukan fulfillment source
-                $fulfillmentSource = $this->getFulfillmentSource($product->type);
+            // Kurangi stok jika manual
+            if (!$product->is_digiflazz) {
+                $nominal->decrement('available_stock');
+            }
 
-                // Buat transaction item
-                TransactionItem::create([
-                    'transaction_id' => $transaction->id,
-                    'product_id' => $product->id,
-                    'product_nominal_id' => $nominal->id,
-                    'quantity' => 1,
-                    'price' => $price,
-                    'total' => $price,
-                    'status' => 'pending',
-                    'fulfillment_source' => $fulfillmentSource
-                ]);
+            DB::commit();
 
-                // Simpan recipient number ke additional data jika ada
-                if ($recipientNo) {
-                    // Simpan sebagai metadata atau di field khusus
-                    // Ini bisa disesuaikan dengan struktur database kamu
-                }
+            Log::info('Checkout success', ['invoice' => $invoice, 'transaction_id' => $transaction->id]);
 
-                // Kurangi stock nominal
-                $nominal->decrement('available_stock', 1);
-            } else {
-                // Proses cart items
-                $productIds = array_keys($cart);
-                $products = Product::whereIn('id', $productIds)->get()->keyBy('id');
+            return response()->json([
+                'success' => true,
+                'order_id' => $transaction->id,
+                'message' => 'Pembayaran berhasil dibuat',
+                'invoice' => $invoice
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Checkout error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
 
-                foreach ($cart as $productId => $item) {
-                    $product = $products[$productId];
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
-                    // Ambil nomor tujuan dari form
-                    $recipientNo = $validated['recipient_numbers'][$productId] ?? null;
+    /**
+     * Step 3: Show payment page with QR
+     */
+    public function payment($order_id)
+    {
+        $transaction = Trancsaction::where('user_id', Auth::id())
+            ->with(['items.product', 'items.nominal'])
+            ->findOrFail($order_id);
 
-                    $subtotal = $item['price'] * $item['quantity'];
-                    $totalAmount += $subtotal;
+        Log::info('Payment page accessed', [
+            'transaction_id' => $transaction->id,
+            'status' => $transaction->status,
+            'has_payload' => !empty($transaction->payment_payload)
+        ]);
 
-                    // Tentukan fulfillment source
-                    $fulfillmentSource = $this->getFulfillmentSource($product->type);
+        // Jika sudah paid/completed, redirect ke success
+        if (in_array($transaction->status, ['paid', 'completed'])) {
+            return redirect()->route('checkout.success', $order_id);
+        }
 
-                    // Cari nominal jika ada
-                    $nominalId = $item['nominal_id'] ?? null;
+        // Jika expired/cancelled, redirect ke failed
+        if (in_array($transaction->status, ['expired', 'cancelled'])) {
+            return redirect()->route('checkout.failed', $order_id);
+        }
 
-                    TransactionItem::create([
-                        'transaction_id' => $transaction->id,
-                        'product_id' => $product->id,
-                        'product_nominal_id' => $nominalId,
-                        'quantity' => $item['quantity'],
-                        'price' => $item['price'],
-                        'total' => $subtotal,
-                        'status' => 'pending',
-                        'fulfillment_source' => $fulfillmentSource
+        // Get QR URL dari payload
+        $qrUrl = null;
+
+        if ($transaction->payment_payload) {
+            $paymentData = json_decode($transaction->payment_payload, true);
+            Log::info('Payment data from payload:', $paymentData);
+
+            // Coba ambil QR URL dari beberapa sumber
+            if (isset($paymentData['qr_url'])) {
+                $qrUrl = $paymentData['qr_url'];
+            } elseif (isset($paymentData['qr_string'])) {
+                // Generate QR dari string
+                $qrString = $paymentData['qr_string'];
+                $qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' . urlencode($qrString);
+            } elseif (isset($paymentData['redirect_url'])) {
+                $qrUrl = $paymentData['redirect_url'];
+            }
+        }
+
+        Log::info('Final QR URL for display: ' . ($qrUrl ? 'YES' : 'NO'));
+
+        return view('customer.pages.payment', [
+            'transaction' => $transaction,
+            'qrUrl' => $qrUrl,
+            'amount' => $transaction->amount,
+            'product' => $transaction->items->first()->product ?? null,
+        ]);
+    }
+
+    /**
+     * Step 4: Check payment status (dipanggil via AJAX)
+     */
+    public function validatePayment(Request $request)
+    {
+        $order_id = $request->order_id;
+
+        // Cari transaksi
+        $transaction = Trancsaction::where('user_id', Auth::id())
+            ->with(['items.product'])
+            ->findOrFail($order_id);
+
+        Log::info('Checking payment status for: ' . $transaction->invoice);
+
+        // SIMULASI: Jika lebih dari 30 detik sejak dibuat, anggap SUCCESS (untuk testing)
+        if (app()->environment('local') || app()->environment('testing')) {
+            $createdAgo = now()->diffInSeconds($transaction->created_at);
+
+            if ($createdAgo > 30 && $transaction->status === 'pending') {
+                Log::info('Simulating successful payment for testing');
+
+                DB::beginTransaction();
+                try {
+                    // Update transaction
+                    $transaction->update([
+                        'status' => 'paid',
+                        'total_paid' => $transaction->amount,
+                        'paid_at' => now(),
                     ]);
 
-                    // Kurangi stock jika ada nominal
-                    if ($nominalId) {
-                        ProductNominal::where('id', $nominalId)->decrement('available_stock', $item['quantity']);
+                    // Update item
+                    $transactionItem = $transaction->items()->first();
+                    $transactionItem->update(['status' => 'processing']);
+
+                    // Process based on product type
+                    $product = $transactionItem->product;
+
+                    if ($product->is_digiflazz) {
+                        $this->processDigiflazz($transactionItem);
+                    } else {
+                        $this->processManual($transactionItem);
                     }
+
+                    // Send notifications
+                    $this->sendNotifications($transaction);
+
+                    DB::commit();
+
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Pembayaran berhasil (simulasi)'
+                    ]);
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    Log::error('Simulation error: ' . $e->getMessage());
                 }
             }
+        }
 
-            // Update total amount
-            $transaction->update([
-                'amount' => $totalAmount,
-                'total_paid' => $totalAmount
-            ]);
+        // REAL CHECK: Cek status transaksi
+        switch ($transaction->status) {
+            case 'paid':
+            case 'completed':
+                return response()->json(['status' => 'success']);
 
-            // Simpan customer data jika guest
-            if (!auth()->check()) {
-                session(['guest_checkout' => [
-                    'name' => $validated['name'],
-                    'phone' => $validated['phone'],
-                    'transaction_id' => $transaction->id
-                ]]);
+            case 'cancelled':
+            case 'expired':
+            case 'failed':
+                return response()->json([
+                    'status' => 'failed',
+                    'message' => 'Transaksi ' . $transaction->status
+                ]);
+
+            case 'processing':
+                return response()->json(['status' => 'processing_error']);
+
+            default:
+                return response()->json(['status' => 'pending']);
+        }
+    }
+
+    /**
+     * Step 5: Success page
+     */
+    public function success($order_id)
+    {
+        $transaction = Trancsaction::where('user_id', Auth::id())
+            ->with(['items.product', 'items.nominal'])
+            ->findOrFail($order_id);
+
+        // Jika status masih pending, coba check ulang
+        if ($transaction->status === 'pending') {
+            // Cek status dari database (mungkin sudah berubah)
+            $transaction->refresh();
+
+            // Jika masih pending, redirect kembali ke payment
+            if ($transaction->status === 'pending') {
+                return redirect()->route('checkout.payment', $order_id)
+                    ->with('info', 'Pembayaran masih diproses. Silakan tunggu...');
+            }
+        }
+
+        return view('customer.pages.success', [
+            'transaction' => $transaction
+        ]);
+    }
+
+    /**
+     * Step 6: Failed page
+     */
+    public function failed($order_id)
+    {
+        $transaction = Trancsaction::where('user_id', Auth::id())
+            ->findOrFail($order_id);
+
+        return view('customer.pages.failed', [
+            'transaction' => $transaction
+        ]);
+    }
+
+    /**
+     * ============================================
+     * PRIVATE METHODS
+     * ============================================
+     */
+
+    /**
+     * Proses produk Digiflazz
+     */
+    private function processDigiflazz($transactionItem)
+    {
+        try {
+            $product = $transactionItem->product;
+            $nominal = $transactionItem->nominal;
+            $phone = $transactionItem->phone;
+
+            // Cari provider Digiflazz
+            $provider = Provider::where('type', 'digiflazz')
+                ->where('status', 'active')
+                ->first();
+
+            if (!$provider) {
+                throw new \Exception('Provider Digiflazz tidak ditemukan');
             }
 
-            // Clear session data
-            session()->forget(['single_checkout', 'cart']);
+            // Instantiate DigiflazzService
+            $digiflazzService = new DigiflazzService($provider);
 
-            // Redirect ke pembayaran
-            return redirect()->route('payment.show', $transaction->invoice)
-                ->with('success', 'Pesanan berhasil dibuat. Silakan lakukan pembayaran.');
+            // Cari SKU dari provider product
+            $providerProduct = ProviderProduct::where('provider_id', $provider->id)
+                ->where(function ($query) use ($nominal) {
+                    $query->where('provider_sku', $nominal->provider_sku)
+                        ->orWhere('name', 'like', '%' . $nominal->name . '%');
+                })
+                ->first();
+
+            if (!$providerProduct) {
+                throw new \Exception('SKU produk tidak ditemukan di Digiflazz');
+            }
+
+            // Generate ref_id
+            $refId = 'DGF-' . strtoupper(Str::random(8)) . '-' . time();
+
+            // Panggil API Digiflazz
+            $result = $digiflazzService->topup(
+                $providerProduct->provider_sku,
+                $phone,
+                $refId
+            );
+
+            // Parse response
+            $responseData = $result['data'] ?? [];
+            $status = $responseData['status'] ?? 'error';
+            $sn = $responseData['sn'] ?? null;
+            $message = $responseData['message'] ?? 'No message';
+
+            if ($status === 'success' || $status === '1') {
+                // Update transaction item
+                $transactionItem->update([
+                    'status' => 'completed',
+                    'provider_trx_id' => $responseData['trx_id'] ?? $refId,
+                    'provider_status' => 'success',
+                    'provider_rc' => $responseData['rc'] ?? null,
+                    'provider_message' => $message,
+                    'sn' => $sn,
+                    'raw_response' => json_encode($responseData),
+                    'completed_at' => Carbon::now(),
+                ]);
+
+                // Update parent transaction
+                $transactionItem->transaction->update([
+                    'status' => 'completed',
+                    'completed_at' => Carbon::now(),
+                ]);
+
+                Log::info('Digiflazz purchase successful', [
+                    'transaction_id' => $transactionItem->transaction_id,
+                    'ref_id' => $refId,
+                    'sn' => $sn
+                ]);
+            } else {
+                // Update sebagai failed
+                $transactionItem->update([
+                    'status' => 'cancelled',
+                    'provider_status' => 'failed',
+                    'provider_message' => $message,
+                    'raw_response' => json_encode($responseData),
+                ]);
+
+                throw new \Exception('Digiflazz error: ' . $message);
+            }
         } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
-                ->withInput();
+            Log::error('Digiflazz processing error: ' . $e->getMessage(), [
+                'transaction_item_id' => $transactionItem->id
+            ]);
+            throw $e;
         }
     }
 
     /**
-     * Hapus item dari cart
+     * Proses produk Manual
      */
-    public function removeFromCart($id)
+    private function processManual($transactionItem)
     {
-        // Cek apakah single checkout
-        $singleCheckout = session('single_checkout');
+        // Generate voucher code
+        $voucherCode = 'VOUCH-' . strtoupper(Str::random(10));
 
-        if ($singleCheckout && strpos($id, 'single_') === 0) {
-            // Hapus single checkout
-            session()->forget('single_checkout');
-            return redirect()->route('products.index')
-                ->with('success', 'Pesanan dibatalkan.');
-        }
+        // Generate QR Code URL
+        $qrCodeUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' .
+            urlencode('VOUCHER-' . $voucherCode);
 
-        // Hapus dari cart biasa
-        $cart = session('cart', []);
+        // Update transaction item
+        $transactionItem->update([
+            'status' => 'completed',
+            'voucher_code' => $voucherCode,
+            'qr_code_url' => $qrCodeUrl,
+            'expired_at' => Carbon::now()->addDays(30),
+            'completed_at' => Carbon::now(),
+        ]);
 
-        if (isset($cart[$id])) {
-            unset($cart[$id]);
-            session(['cart' => $cart]);
-
-            return redirect()->route('checkout.index')
-                ->with('success', 'Produk dihapus dari keranjang.');
-        }
-
-        return redirect()->route('checkout.index')
-            ->with('error', 'Produk tidak ditemukan.');
+        // Update parent transaction
+        $transactionItem->transaction->update([
+            'status' => 'completed',
+            'completed_at' => Carbon::now(),
+        ]);
     }
 
     /**
-     * Map product type untuk konsistensi
+     * Kirim semua notifikasi
      */
-    private function mapProductType($type)
+    private function sendNotifications($transaction)
     {
-        $mapping = [
-            'pulsa' => 'digiflazz',
-            'data' => 'digiflazz',
-            'e-wallet' => 'transfer',
-            'pln' => 'digiflazz',
-            'pdam' => 'digiflazz',
-            'bpjs' => 'digiflazz',
-            'game_voucher' => 'manual',
-            'voucher' => 'manual',
-            'other' => 'manual'
-        ];
+        try {
+            // 1️⃣ NOTIFIKASI TELEGRAM KE ADMIN
+            $this->telegramService->sendNewTransaction($transaction);
 
-        return $mapping[$type] ?? 'manual';
+            // 2️⃣ NOTIFIKASI WHATSAPP KE CUSTOMER
+            $userPhone = $transaction->user->phone;
+            $transactionItem = $transaction->items()->first();
+            $product = $transactionItem->product;
+
+            if ($product->is_digiflazz) {
+                // Format WA untuk Digiflazz
+                $this->sendDigiflazzWhatsApp($transaction);
+            } else {
+                // Format WA untuk Manual (3 pesan)
+                $this->sendManualWhatsApp($transaction);
+            }
+        } catch (\Exception $e) {
+            Log::error('Notification error: ' . $e->getMessage());
+            // Jangan throw error agar proses tetap berjalan
+        }
     }
 
     /**
-     * Tentukan fulfillment source berdasarkan product type
+     * Kirim WhatsApp untuk produk Digiflazz
      */
-    private function getFulfillmentSource($productType)
+    private function sendDigiflazzWhatsApp($transaction)
     {
-        $mapping = [
-            'pulsa' => 'digiflazz',
-            'data' => 'digiflazz',
-            'e-wallet' => 'manual', // biasanya manual transfer
-            'pln' => 'digiflazz',
-            'pdam' => 'digiflazz',
-            'bpjs' => 'digiflazz',
-            'game_voucher' => 'manual',
-            'voucher' => 'manual'
-        ];
+        $transactionItem = $transaction->items()->first();
 
-        return $mapping[$productType] ?? 'manual';
+        // Pesan 1: Konfirmasi pembayaran
+        $message1 = "✅ *PEMBAYARAN BERHASIL*\n\n";
+        $message1 .= "Invoice: {$transaction->invoice}\n";
+        $message1 .= "Produk: {$transactionItem->product->name}\n";
+        $message1 .= "Nominal: {$transactionItem->nominal->name}\n";
+        $message1 .= "No. Tujuan: {$transactionItem->phone}\n";
+        $message1 .= "Status: Diproses otomatis\n\n";
+        $message1 .= "Mohon tunggu 1-5 menit untuk pengisian.";
+
+        $this->whatsappService->sendMessage($transaction->user->phone, $message1);
+
+        sleep(2);
+
+        // Pesan 2: Hasil pengisian
+        if ($transactionItem->provider_status === 'success') {
+            $message2 = "🎉 *PENGISIAN SUKSES*\n\n";
+            $message2 .= "SN: {$transactionItem->sn}\n";
+            $message2 .= "Status: Berhasil\n";
+            $message2 .= "Waktu: " . now()->format('d/m/Y H:i:s') . "\n\n";
+            $message2 .= "Terima kasih telah berbelanja!";
+
+            $this->whatsappService->sendMessage($transaction->user->phone, $message2);
+        } else {
+            $message2 = "⚠️ *PENGISIAN GAGAL*\n\n";
+            $message2 .= "Status: {$transactionItem->provider_message}\n";
+            $message2 .= "Silakan hubungi admin untuk refund.\n\n";
+            $message2 .= "WhatsApp Admin: 628xxxxxxxxxx";
+
+            $this->whatsappService->sendMessage($transaction->user->phone, $message2);
+        }
+    }
+
+    /**
+     * Kirim WhatsApp untuk produk Manual
+     */
+    private function sendManualWhatsApp($transaction)
+    {
+        $transactionItem = $transaction->items()->first();
+        $expiredDate = $transactionItem->expired_at->format('d F Y');
+
+        // WA 1: Kode Voucher
+        $message1 = "🎫 *KODE VOUCHER ANDA*\n\n";
+        $message1 .= "Invoice: {$transaction->invoice}\n";
+        $message1 .= "Produk: {$transactionItem->product->name}\n";
+        $message1 .= "Kode: *{$transactionItem->voucher_code}*\n\n";
+        $message1 .= "Simpan kode ini untuk klaim produk.";
+
+        $this->whatsappService->sendMessage($transaction->user->phone, $message1);
+
+        sleep(2);
+
+        // WA 2: QR Code
+        $message2 = "📱 *QR CODE PRODUK*\n\n";
+        $message2 .= "Scan QR untuk klaim produk:\n";
+        $message2 .= "Link: {$transactionItem->qr_code_url}";
+
+        $this->whatsappService->sendMessage($transaction->user->phone, $message2);
+
+        sleep(2);
+
+        // WA 3: Terima Kasih + Expired
+        $message3 = "🎉 *TERIMA KASIH*\n\n";
+        $message3 .= "Pembayaran berhasil!\n\n";
+        $message3 .= "Produk berlaku hingga: *{$expiredDate}*\n\n";
+        $message3 .= "Hubungi admin jika butuh bantuan.";
+
+        $this->whatsappService->sendMessage($transaction->user->phone, $message3);
     }
 }

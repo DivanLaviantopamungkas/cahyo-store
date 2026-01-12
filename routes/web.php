@@ -28,8 +28,7 @@ use App\Http\Controllers\Admin\BroadcastController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\DigiflazzController;
 use App\Http\Controllers\Admin\MemberController;
-
-
+use App\Http\Controllers\Admin\PaymentWebhookController;
 use App\Http\Controllers\Customer\CustomerControllers;
 use App\Http\Controllers\Customer\HelpController;
 use App\Http\Controllers\Customer\NotificationController;
@@ -37,6 +36,7 @@ use App\Http\Controllers\Customer\ProfileController as CustomerProfileController
 use App\Http\Controllers\Customer\ProductController as CustomerGuiProductController;
 use App\Http\Controllers\Customer\CategoryController as CustomerGuiCategoryController;
 use App\Http\Controllers\Customer\UserController;
+use App\Http\Middleware\CheckCheckoutAccess;
 
 /*
 |--------------------------------------------------------------------------
@@ -92,7 +92,6 @@ Route::prefix('bantuan')->name('help.')->group(function () {
 // Notifikasi (Bisa diakses tanpa login, tapi kosong kalau belum login)
 Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
 
-
 // ==================== AUTH ROUTES ====================
 // Authentication Routes
 Route::middleware('guest')->group(function () {
@@ -102,20 +101,20 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [UserController::class, 'register'])->name('register.post');
 });
 
+Route::get('/checkout/{product_slug}', [CheckoutController::class, 'create'])
+    ->middleware([CheckCheckoutAccess::class])
+    ->name('checkout.create');
+
 // Logout
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [UserController::class, 'logout'])->name('logout');
 
-    // Checkout & Pembayaran (WAJIB LOGIN)
-    Route::prefix('checkout')->name('checkout.')->group(function () {
-        Route::get('/', [CheckoutController::class, 'index'])->name('index');
-        Route::get('/{product_slug}', [CheckoutController::class, 'create'])->name('create');
-        Route::post('/', [CheckoutController::class, 'store'])->name('store');
-        Route::get('/payment/{order_id}', [CheckoutController::class, 'payment'])->name('payment');
-        Route::get('/success/{order_id}', [CheckoutController::class, 'success'])->name('success');
-        Route::get('/failed/{order_id}', [CheckoutController::class, 'failed'])->name('failed');
-        Route::post('/validate', [CheckoutController::class, 'validatePayment'])->name('validate');
-    });
+    Route::get('/checkout/{product_slug}', [CheckoutController::class, 'create'])->name('checkout.create');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::get('/checkout/payment/{order_id}', [CheckoutController::class, 'payment'])->name('checkout.payment');
+    Route::get('/checkout/success/{order_id}', [CheckoutController::class, 'success'])->name('checkout.success');
+    Route::get('/checkout/failed/{order_id}', [CheckoutController::class, 'failed'])->name('checkout.failed');
+    Route::get('/checkout/validate', [CheckoutController::class, 'validatePayment'])->name('checkout.validate');
 
     // Pesanan (WAJIB LOGIN)
     Route::prefix('pesanan')->name('orders.')->group(function () {
@@ -140,6 +139,16 @@ Route::middleware('auth')->group(function () {
         Route::delete('/clear', [NotificationController::class, 'clear'])->name('clear');
     });
 });
+
+Route::post('/payment/webhook/midtrans', [PaymentWebhookController::class, 'midtrans'])
+    ->name('webhook.midtrans');
+Route::post('/payment/webhook/test', [PaymentWebhookController::class, 'testWebhook'])
+    ->name('webhook.test');
+Route::get('/checkout/handle-midtrans-return', [CheckoutController::class, 'handleMidtransReturn'])
+    ->name('checkout.handle.midtrans.return');
+Route::post('/payment/webhook/midtrans', [PaymentWebhookController::class, 'midtrans'])
+    ->name('payment.webhook.midtrans');
+
 // ==================== PROTECTED ROUTES (WAJIB LOGIN) ====================
 
 
