@@ -295,6 +295,89 @@ class CheckoutController extends Controller
         }
     }
 
+    public function handleMidtransReturn(Request $request)
+    {
+        $orderId = $request->get('order_id');
+        
+        $transaction = Trancsaction::where('invoice', $orderId)->first();
+        
+        if (!$transaction) {
+            return redirect()->route('home')->with('error', 'Transaksi tidak ditemukan');
+        }
+
+        if ($transaction->status === 'pending') {
+            try {
+                $status = $this->midtransService->checkStatus($orderId);
+                
+                if ($status) {
+                    $transactionStatus = $status->transaction_status;
+                    $fraudStatus = $status->fraud_status;
+                    $isPaid = false;
+
+                    // Logika Status Midtrans
+                    if ($transactionStatus == 'capture') {
+                        if ($fraudStatus == 'challenge') {
+                        } else if ($fraudStatus == 'accept') {
+                            $isPaid = true;
+                        }
+                    } else if ($transactionStatus == 'settlement') {
+                        $isPaid = true;
+                    } else if (in_array($transactionStatus, ['cancel', 'deny', 'expire'])) {
+                        $transaction->update(['status' => 'cancelled']);
+                    }
+
+                    // Jika Midtrans bilang Lunas, Update DB
+                    if ($isPaid) {
+                        DB::beginTransaction();
+                        try {
+                            $transaction->update([
+                                'status' => 'paid',
+                                'total_paid' => $status->gross_amount,
+                                'paid_at' => now(),
+                                'payment_reference' => $status->transaction_id ?? null,
+                            ]);
+
+                            $item = $transaction->items()->first();
+                            $item->update(['status' => 'processing']);
+
+                            if ($item->product->is_digiflazz) {
+                                $this->processDigiflazz($item);
+                            } else {
+                                $this->processManual($item);
+                            }
+
+                            DB::commit();
+                            
+                            // PENTING: Refresh model agar status terbaru terbaca oleh baris kode di bawah
+                            $transaction->refresh(); 
+                            
+                        } catch (\Exception $e) {
+                            DB::rollBack();
+                            Log::error('Auto-update return error: ' . $e->getMessage());
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::error('Gagal cek status midtrans: ' . $e->getMessage());
+            }
+        }
+
+        // Cek lagi status terbaru setelah proses di atas
+        $transaction->refresh();
+
+        if (in_array($transaction->status, ['paid', 'completed'])) {
+            // SUKSES -> Ke Halaman Sukses
+            return redirect()->route('checkout.success', $transaction->id);
+        } else if (in_array($transaction->status, ['cancelled', 'expired', 'failed'])) {
+            // GAGAL -> Ke Halaman Gagal
+            return redirect()->route('checkout.failed', $transaction->id);
+        }
+        
+        // PENDING -> Ke Halaman Payment (Hanya jika benar-benar masih pending)
+        return redirect()->route('checkout.payment', $transaction->id)
+            ->with('info', 'Pembayaran sedang diproses, silakan refresh halaman ini.');
+    }
+
     /**
      * Step 5: Success page
      */
@@ -316,7 +399,7 @@ class CheckoutController extends Controller
             }
         }
 
-        return view('customer.pages.success', [
+        return view('customer.pages.succes', [
             'transaction' => $transaction
         ]);
     }

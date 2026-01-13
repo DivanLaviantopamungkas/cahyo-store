@@ -101,6 +101,13 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [UserController::class, 'register'])->name('register.post');
 });
 
+Route::post('/payment/webhook/midtrans', [PaymentWebhookController::class, 'midtrans'])
+    ->name('webhook.midtrans');
+Route::post('/payment/webhook/test', [PaymentWebhookController::class, 'testWebhook'])
+    ->name('webhook.test');
+Route::get('/checkout/handle-midtrans-return', [CheckoutController::class, 'handleMidtransReturn'])
+    ->name('checkout.handle.midtrans.return');
+
 Route::get('/checkout/{product_slug}', [CheckoutController::class, 'create'])
     ->middleware([CheckCheckoutAccess::class])
     ->name('checkout.create');
@@ -109,7 +116,7 @@ Route::get('/checkout/{product_slug}', [CheckoutController::class, 'create'])
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [UserController::class, 'logout'])->name('logout');
 
-    Route::get('/checkout/{product_slug}', [CheckoutController::class, 'create'])->name('checkout.create');
+    // Route::get('/checkout/{product_slug}', [CheckoutController::class, 'create'])->name('checkout.create');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('/checkout/payment/{order_id}', [CheckoutController::class, 'payment'])->name('checkout.payment');
     Route::get('/checkout/success/{order_id}', [CheckoutController::class, 'success'])->name('checkout.success');
@@ -139,15 +146,6 @@ Route::middleware('auth')->group(function () {
         Route::delete('/clear', [NotificationController::class, 'clear'])->name('clear');
     });
 });
-
-Route::post('/payment/webhook/midtrans', [PaymentWebhookController::class, 'midtrans'])
-    ->name('webhook.midtrans');
-Route::post('/payment/webhook/test', [PaymentWebhookController::class, 'testWebhook'])
-    ->name('webhook.test');
-Route::get('/checkout/handle-midtrans-return', [CheckoutController::class, 'handleMidtransReturn'])
-    ->name('checkout.handle.midtrans.return');
-Route::post('/payment/webhook/midtrans', [PaymentWebhookController::class, 'midtrans'])
-    ->name('payment.webhook.midtrans');
 
 // ==================== PROTECTED ROUTES (WAJIB LOGIN) ====================
 

@@ -56,7 +56,7 @@
                             <i class='bx bx-home mr-2'></i> Kembali ke Beranda
                         </a>
 
-                        <a href="{{ route('user.transactions') }}"
+                        <a href="{{ route('orders.index') }}"
                             class="block border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg hover:bg-gray-50 transition-colors">
                             <i class='bx bx-history mr-2'></i> Lihat Riwayat Transaksi
                         </a>

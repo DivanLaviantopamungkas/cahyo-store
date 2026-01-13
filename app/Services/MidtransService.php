@@ -37,7 +37,10 @@ class MidtransService
             $params = [
                 'transaction_details' => $transactionDetails,
                 'customer_details' => $customerDetails,
-                // JANGAN tambahkan callbacks untuk sandbox
+                'callbacks' => [
+                    'finish' => route('checkout.handle.midtrans.return'),
+                    'error' => route('checkout.handle.midtrans.return'),
+                ],
             ];
 
             // Generate Snap Token
