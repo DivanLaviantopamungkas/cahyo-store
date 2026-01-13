@@ -8,15 +8,18 @@
 
             <!-- Desktop Menu -->
             <div class="hidden md:flex items-center space-x-8">
-                <a href="{{ route('home') }}" class="text-gray-600 hover:text-primary font-medium transition-colors">
+                <a href="{{ route('home') }}" 
+                   class="{{ request()->routeIs('home') ? 'text-primary font-bold' : 'text-gray-600 font-medium' }} hover:text-primary transition-colors flex items-center">
                     <i class='bx bx-home text-lg mr-1'></i> Beranda
                 </a>
+
                 <a href="{{ route('orders.index') }}"
-                    class="text-gray-600 hover:text-primary font-medium transition-colors">
+                    class="{{ request()->routeIs('orders.*') ? 'text-primary font-bold' : 'text-gray-600 font-medium' }} hover:text-primary transition-colors flex items-center">
                     <i class='bx bx-package text-lg mr-1'></i> Pesanan
                 </a>
+
                 <a href="{{ route('help.index') }}"
-                    class="text-gray-600 hover:text-primary font-medium transition-colors">
+                    class="{{ request()->routeIs('help.*') ? 'text-primary font-bold' : 'text-gray-600 font-medium' }} hover:text-primary transition-colors flex items-center">
                     <i class='bx bx-support text-lg mr-1'></i> Bantuan
                 </a>
 
