@@ -141,9 +141,13 @@ Route::middleware('auth')->group(function () {
 
     // Notifikasi Detail (WAJIB LOGIN)
     Route::prefix('notifikasi')->name('notifications.')->group(function () {
-        Route::get('/{id}', [NotificationController::class, 'show'])->name('show');
-        Route::post('/mark-all-read', [NotificationController::class, 'markAllRead'])->name('mark-all-read');
+        Route::get('/api/unread-count', [NotificationController::class, 'getUnreadCount'])->name('unread-count');
+        Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('mark-all-read');
         Route::delete('/clear', [NotificationController::class, 'clear'])->name('clear');
+
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+
+        Route::get('/{id}', [NotificationController::class, 'show'])->name('show');
     });
 });
 

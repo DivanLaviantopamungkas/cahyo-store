@@ -24,13 +24,34 @@
                 </a>
 
                 <!-- Notifikasi -->
-                <a href="{{ route('notifications.index') }}" class="relative text-gray-600 hover:text-primary">
-                    <i class='bx bx-bell text-2xl'></i>
-                    <span
-                        class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                        3
-                    </span>
-                </a>
+                <div x-data="{ 
+                    unreadCount: 0,
+                    checkNotifications() {
+                        fetch('{{ route('notifications.unread-count') }}')
+                            .then(res => res.json())
+                            .then(data => {
+                                this.unreadCount = data.count;
+                            })
+                            .catch(err => console.log('Gagal ambil notif', err));
+                    }
+                }" 
+                x-init="
+                    @auth
+                        checkNotifications(); 
+                        setInterval(() => checkNotifications(), 10000); // Cek setiap 10 detik
+                    @endauth
+                " class="relative flex items-center">
+                    
+                    <a href="{{ route('notifications.index') }}" class="relative text-gray-600 hover:text-primary transition-colors">
+                        <i class='bx bx-bell text-2xl'></i>
+                        
+                        <span x-show="unreadCount > 0" 
+                            x-transition.scale
+                            x-text="unreadCount"
+                            class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold shadow-sm border border-white">
+                        </span>
+                    </a>
+                </div>
 
                 <!-- Login/Profile -->
                 <div x-data="{ mobileMenuOpen: false }">

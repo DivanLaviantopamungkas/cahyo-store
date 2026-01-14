@@ -69,4 +69,9 @@ class Product extends Model
     {
         return $query->where('source', 'digiflazz');
     }
+
+    public function getIsDigiflazzAttribute()
+    {
+        return $this->source === 'digiflazz';
+    }
 }

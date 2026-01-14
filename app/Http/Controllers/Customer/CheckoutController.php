@@ -2,29 +2,31 @@
 
 namespace App\Http\Controllers\Customer;
 
+use Carbon\Carbon;
 use App\Models\Product;
 use App\Models\Provider;
-use App\Models\ProviderProduct;
+use Illuminate\Support\Str;
 use App\Models\Trancsaction;
-use App\Models\TransactionItem;
+use Illuminate\Http\Request;
 use App\Models\ProductNominal;
+use App\Models\ProviderProduct;
+use App\Models\TransactionItem;
 use App\Services\MidtransService;
-use App\Services\DigiflazzService;
 use App\Services\TelegramService;
 use App\Services\WhatsAppService;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Services\DigiflazzService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
-use Carbon\Carbon;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use App\Services\NotificationService;
 
 class CheckoutController extends Controller
 {
     protected $midtransService;
     protected $telegramService;
     protected $whatsappService;
+    protected $notificationService;
 
     // DigiflazzService akan di-instantiate sesuai provider
 
@@ -33,6 +35,7 @@ class CheckoutController extends Controller
         $this->midtransService = new MidtransService();
         $this->telegramService = new TelegramService();
         $this->whatsappService = new WhatsAppService();
+        $this->notificationService = new NotificationService();
     }
 
     /**
@@ -340,11 +343,15 @@ class CheckoutController extends Controller
                             $item = $transaction->items()->first();
                             $item->update(['status' => 'processing']);
 
-                            if ($item->product->is_digiflazz) {
+                            $item->load('product');
+
+                            if ($item->product->source === 'digiflazz') {
                                 $this->processDigiflazz($item);
                             } else {
                                 $this->processManual($item);
                             }
+
+                            $this->sendNotifications($transaction);
 
                             DB::commit();
                             
@@ -550,21 +557,28 @@ class CheckoutController extends Controller
     private function sendNotifications($transaction)
     {
         try {
-            // 1️⃣ NOTIFIKASI TELEGRAM KE ADMIN
+            // 1️⃣ NOTIFIKASI IN-APP (Database)
+            $this->notificationService->paymentSuccess($transaction);
+
+            // 2️⃣ NOTIFIKASI TELEGRAM KE ADMIN
             $this->telegramService->sendNewTransaction($transaction);
 
-            // 2️⃣ NOTIFIKASI WHATSAPP KE CUSTOMER
+            // 3️⃣ NOTIFIKASI WHATSAPP KE CUSTOMER
             $userPhone = $transaction->user->phone;
             $transactionItem = $transaction->items()->first();
             $product = $transactionItem->product;
 
-            if ($product->is_digiflazz) {
+            if ($product->source === 'digiflazz') {
                 // Format WA untuk Digiflazz
                 $this->sendDigiflazzWhatsApp($transaction);
             } else {
                 // Format WA untuk Manual (3 pesan)
                 $this->sendManualWhatsApp($transaction);
             }
+
+            Log::info('All notifications sent successfully', [
+                'transaction_id' => $transaction->id
+            ]);
         } catch (\Exception $e) {
             Log::error('Notification error: ' . $e->getMessage());
             // Jangan throw error agar proses tetap berjalan
@@ -616,7 +630,12 @@ class CheckoutController extends Controller
     private function sendManualWhatsApp($transaction)
     {
         $transactionItem = $transaction->items()->first();
-        $expiredDate = $transactionItem->expired_at->format('d F Y');
+
+        $transactionItem->refresh();
+
+        $expiredDate = $transactionItem->expired_at 
+            ? $transactionItem->expired_at->format('d F Y') 
+            : now()->addDays(30)->format('d F Y'); // Fallback default
 
         // WA 1: Kode Voucher
         $message1 = "🎫 *KODE VOUCHER ANDA*\n\n";
