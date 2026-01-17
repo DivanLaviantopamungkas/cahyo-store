@@ -77,107 +77,90 @@
                     <!-- Payment Details -->
                     <div class="mb-8">
                         <h2 class="text-lg font-semibold text-gray-900 mb-4">Detail Pembayaran</h2>
+                        
+                        @php
+                            // Hitung harga satuan (cek diskon)
+                            $unitPrice = ($nominal->discount_price && $nominal->discount_price < $nominal->price) 
+                                        ? $nominal->discount_price 
+                                        : $nominal->price;
+                            
+                            // Pastikan quantity ada
+                            $qty = $quantity ?? null;
+                            
+                            // Hitung total
+                            $totalPayment = $unitPrice * $qty;
+                        @endphp
+
                         <div class="space-y-3">
                             <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Harga Produk</span>
-                                <span class="text-gray-900">Rp {{ number_format($nominal->price, 0, ',', '.') }}</span>
+                                <span class="text-gray-600">Harga Satuan</span>
+                                <span class="text-gray-900">Rp {{ number_format($unitPrice, 0, ',', '.') }}</span>
                             </div>
-
-                            @if ($nominal->discount_price && $nominal->discount_price < $nominal->price)
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-600">Diskon</span>
-                                    <span class="text-green-600 font-medium">
-                                        -Rp {{ number_format($nominal->price - $nominal->discount_price, 0, ',', '.') }}
-                                    </span>
-                                </div>
-                            @endif
-
+                            
                             <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">Biaya Admin</span>
-                                <span class="text-gray-900">Rp 0</span>
+                                <span class="text-gray-600">Jumlah Pembelian</span>
+                                <span class="text-gray-900 font-medium">{{ $qty }}x</span>
                             </div>
 
                             <div class="pt-4 border-t border-gray-200">
-                                <div class="flex justify-between items-center">
+                                <div class="flex justify-between items-center mb-1">
                                     <span class="font-medium text-gray-900">Total Pembayaran</span>
                                     <span class="text-xl font-bold text-green-600">
-                                        Rp {{ number_format($nominal->discount_price ?? $nominal->price, 0, ',', '.') }}
+                                        Rp {{ number_format($totalPayment, 0, ',', '.') }}
                                     </span>
+                                </div>
+                                <div class="flex justify-end">
+                                    <div class="bg-gray-50 px-2 py-1 rounded text-right inline-block">
+                                        <p class="text-[10px] sm:text-xs text-gray-500 flex items-center justify-end gap-1">
+                                            <i class='bx bx-info-circle text-gray-400'></i>
+                                            Biaya admin QRIS ditanggung pembeli
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Payment Method -->
                     <!-- Payment Method -->
                     <div class="mb-8">
                         <h2 class="text-lg font-semibold text-gray-900 mb-4">Metode Pembayaran</h2>
 
                         <!-- Hanya QRIS yang tersedia -->
-                        <div class="border border-green-200 bg-green-50 rounded-lg p-4">
-                            <label class="flex items-center justify-between cursor-pointer">
-                                <div class="flex items-center gap-3">
-                                    <div
-                                        class="w-10 h-10 bg-white rounded-lg flex items-center justify-center border border-green-200">
+                        <div class="border border-green-200 bg-green-50 rounded-lg p-3 sm:p-4 hover:bg-green-100 transition-colors cursor-pointer">
+                            <label class="flex items-center justify-between w-full cursor-pointer">
+
+                                <div class="flex items-center gap-3 flex-1 min-w-0">
+                                    <div class="w-10 h-10 bg-white rounded-lg flex-shrink-0 flex items-center justify-center border border-green-200">
                                         <i class='bx bx-qr-scan text-green-600 text-xl'></i>
                                     </div>
-                                    <div>
-                                        <span class="font-medium text-gray-900">QRIS</span>
-                                        <p class="text-sm text-gray-600">Scan QR Code untuk pembayaran</p>
+                                    <div class="flex flex-col">
+                                        <span class="font-bold text-gray-900 leading-tight">QRIS</span>
+                                        <p class="text-xs text-gray-600 truncate pr-2">Scan QR Code untuk pembayaran</p>
                                     </div>
                                 </div>
-                                <div class="text-right">
-                                    <div class="font-medium text-green-700">Tersedia</div>
-                                    <p class="text-xs text-green-600">Instan & Aman</p>
+
+                                <div class="flex items-center gap-3 flex-shrink-0">
+                                    <div class="text-right">
+                                        <div class="text-xs sm:text-sm font-bold text-green-700">Tersedia</div>
+                                        <p class="text-[10px] text-green-600 hidden sm:block">Instan & Aman</p>
+                                    </div>
+                                    <div class="relative flex items-center justify-center">
+                                        <input type="radio" name="payment_method" value="qris" checked
+                                            class="h-5 w-5 text-green-600 border-gray-300 focus:ring-green-500 cursor-pointer">
+                                    </div>
                                 </div>
-                                <input type="radio" name="payment_method" value="qris" checked
-                                    class="h-4 w-4 text-green-600 border-gray-300">
-                            </label>
-
-                            <!-- Info QRIS -->
-                            <div class="mt-4 pt-4 border-t border-green-200">
-                                <div class="flex items-start gap-2">
-                                    <i class='bx bx-check-circle text-green-600 mt-0.5'></i>
-                                    <p class="text-sm text-green-700">
-                                        Pembayaran via QRIS memungkinkan transfer dari bank mana pun yang mendukung
-                                        QRIS
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Info tambahan -->
-                        <div class="mt-4 text-center">
-                            <p class="text-sm text-gray-600">
-                                <i class='bx bx-info-circle mr-1'></i>
-                                Untuk saat ini hanya pembayaran QRIS yang tersedia
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Terms & Conditions -->
-                    <div class="mb-8">
-                        <div class="flex items-start gap-3">
-                            <input type="checkbox" id="terms" required
-                                class="h-4 w-4 text-green-600 border-gray-300 rounded mt-1">
-                            <label for="terms" class="text-sm text-gray-600">
-                                Saya setuju dengan
-                                <a href="#" class="text-green-600 hover:text-green-700">Syarat & Ketentuan</a>
-                                dan
-                                <a href="#" class="text-green-600 hover:text-green-700">Kebijakan Privasi</a>
-                                yang berlaku. Saya memahami bahwa transaksi yang sudah dibayar tidak dapat dibatalkan.
                             </label>
                         </div>
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="flex gap-4">
+                    <div class="flex gap-3 md:gap-4">
                         <a href="{{ route('home') }}"
-                            class="flex-1 border border-gray-300 text-gray-700 font-medium py-3 px-4 rounded-lg text-center hover:bg-gray-50 transition-colors">
+                            class="flex-1 border border-gray-300 text-gray-700 font-medium py-2.5 px-3 text-sm md:py-3 md:px-4 md:text-base rounded-lg text-center hover:bg-gray-50 transition-colors flex items-center justify-center">
                             Kembali
                         </a>
                         <button id="payButton"
-                            class="flex-1 bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            class="flex-1 bg-green-500 hover:bg-green-600 text-white font-medium py-2.5 px-3 text-sm md:py-3 md:px-4 md:text-base rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
                             Bayar Sekarang
                         </button>
                     </div>
@@ -217,13 +200,6 @@
             console.log('=== PAY BUTTON CLICKED ===');
             e.preventDefault();
 
-            // Cek terms
-            const terms = document.getElementById('terms');
-            if (!terms.checked) {
-                alert('Anda harus menyetujui Syarat & Ketentuan terlebih dahulu');
-                return;
-            }
-
             // Disable button
             this.disabled = true;
             this.innerHTML = '<i class="bx bx-loader bx-spin mr-2"></i> Memproses...';
@@ -236,6 +212,7 @@
             formData.append('payment_method', 'qris');
             formData.append('phone', '{{ request('phone') }}');
             formData.append('customer_id', '{{ request('customer_id') }}');
+            formData.append('quantity', '{{ $quantity ?? null }}');
 
             console.log('Sending request to: {{ route('checkout.store') }}');
 

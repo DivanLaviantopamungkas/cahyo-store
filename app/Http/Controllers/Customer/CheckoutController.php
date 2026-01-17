@@ -49,6 +49,7 @@ class CheckoutController extends Controller
         $nominal_id = $request->get('nominal_id') ?? ($sessionData['nominal_id'] ?? null);
         $phone = $request->get('phone') ?? ($sessionData['phone'] ?? null);
         $customer_id = $request->get('customer_id') ?? ($sessionData['customer_id'] ?? null);
+        $quantity = $request->get('quantity') ?? ($sessionData['quantity'] ?? null);
 
         session()->forget('pending_checkout');
 
@@ -70,7 +71,13 @@ class CheckoutController extends Controller
                 ->with('error', 'Maaf, stok untuk nominal ini habis');
         }
 
-        return view('customer.pages.checkout', compact('product', 'nominal', 'phone', 'customer_id'));
+        // Cek stok cukup untuk quantity yang diminta
+        if (!$product->is_digiflazz && $nominal->available_stock < $quantity) {
+            return redirect()->back()
+                ->with('error', 'Maaf, stok tidak mencukupi untuk jumlah pembelian ini');
+        }
+
+        return view('customer.pages.checkout', compact('product', 'nominal', 'phone', 'customer_id', 'quantity'));
     }
 
     /**
