@@ -63,8 +63,17 @@
                                         <i class='bx bx-time mr-1'></i> Instan
                                     </span>
                                 </div>
-                                <p class="text-gray-600 text-sm leading-relaxed">
-                                    {{ $product->description ?? 'Isi informasi akun Anda dan pilih nominal untuk melanjutkan.' }}
+                            </div>
+
+                            <div class="space-y-3">
+                                @if($product->description)
+                                    <p class="text-gray-600 text-sm leading-relaxed text-justify font-bold">
+                                        {{ $product->description }}
+                                    </p>
+                                @endif
+                                
+                                <p class="text-gray-500 text-sm">
+                                    Isi informasi akun Anda dan pilih nominal untuk melanjutkan.
                                 </p>
                             </div>
 
@@ -216,36 +225,23 @@
 
                         <!-- Info Section -->
                         <div class="mt-8 pt-6 border-t border-gray-200">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div class="flex items-start gap-3">
-                                    <div
-                                        class="flex-shrink-0 w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                                        <i class='bx bx-money text-green-600'></i>
-                                    </div>
-                                    <div>
-                                        <h4 class="text-sm font-medium text-gray-900 mb-1">Lebih Murah</h4>
-                                        <p class="text-xs text-gray-600">Hemat hingga 39% tanpa biaya admin tambahan</p>
-                                    </div>
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-900">Atur Jumlah Pembelian</h4>
+                                    <p class="text-xs text-gray-500 mt-1">Masukkan jumlah yang ingin dibeli</p>
                                 </div>
-                                <div class="flex items-start gap-3">
-                                    <div
-                                        class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                                        <i class='bx bx-bolt text-blue-600'></i>
-                                    </div>
-                                    <div>
-                                        <h4 class="text-sm font-medium text-gray-900 mb-1">Mudah & Otomatis</h4>
-                                        <p class="text-xs text-gray-600">Tidak perlu kirim bukti pembayaran</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-start gap-3">
-                                    <div
-                                        class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                                        <i class='bx bx-time text-purple-600'></i>
-                                    </div>
-                                    <div>
-                                        <h4 class="text-sm font-medium text-gray-900 mb-1">Tanpa Delay</h4>
-                                        <p class="text-xs text-gray-600">Pengiriman hanya hitungan detik</p>
-                                    </div>
+                                
+                                <div class="flex items-center">
+                                    <button type="button" onclick="updateQuantity(-1)" 
+                                        class="w-10 h-10 rounded-l-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-600 transition-colors">
+                                        <i class='bx bx-minus'></i>
+                                    </button>
+                                    <input type="number" id="quantity" value="1" min="1" readonly
+                                        class="w-16 h-10 border-t border-b border-gray-300 text-center text-gray-900 font-medium focus:outline-none focus:ring-0">
+                                    <button type="button" onclick="updateQuantity(1)" 
+                                        class="w-10 h-10 rounded-r-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-600 transition-colors">
+                                        <i class='bx bx-plus'></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -277,22 +273,30 @@
 
     <script>
         let selectedNominalId = null;
+        let currentQuantity = 1;
 
         function handleNominalClick(nominalId) {
-            // Check stock first
             const nominalButton = document.querySelector(`[data-nominal-id="${nominalId}"]`);
             if (nominalButton.disabled) {
                 alert('Nominal ini sedang tidak tersedia');
                 return;
             }
 
-            // Validate form
             if (!validateForm()) {
                 return;
             }
 
-            // Select the nominal
             selectNominal(nominalId);
+        }
+
+        function updateQuantity(change) {
+            const qtyInput = document.getElementById('quantity');
+            let newQty = currentQuantity + change;
+            
+            if (newQty < 1) newQty = 1;
+
+            currentQuantity = newQty;
+            qtyInput.value = currentQuantity;
         }
 
         function validateForm() {
@@ -320,21 +324,17 @@
         }
 
         function selectNominal(nominalId) {
-            // Reset all selections
             document.querySelectorAll('[data-nominal-id]').forEach(btn => {
                 btn.classList.remove('border-green-500', 'bg-green-50', 'ring-1', 'ring-green-200');
             });
 
             selectedNominalId = nominalId;
 
-            // Add selection style
             const nominalButton = document.querySelector(`[data-nominal-id="${nominalId}"]`);
             nominalButton.classList.add('border-green-500', 'bg-green-50', 'ring-1', 'ring-green-200');
 
-            // Enable checkout button
             document.getElementById('checkoutBtn').disabled = false;
 
-            // Scroll to checkout button on mobile
             if (window.innerWidth < 768) {
                 document.getElementById('checkoutBtn').scrollIntoView({
                     behavior: 'smooth',
@@ -343,7 +343,6 @@
             }
         }
 
-        // Form validation on input
         document.querySelectorAll('#customerForm input').forEach(input => {
             input.addEventListener('input', function() {
                 this.classList.remove('border-red-500');
@@ -351,11 +350,9 @@
             });
         });
 
-        // Checkout button handler
         document.getElementById('checkoutBtn').addEventListener('click', function() {
             if (!selectedNominalId) return;
 
-            // Final validation
             if (!validateForm()) {
                 return;
             }
@@ -363,22 +360,19 @@
             const form = document.getElementById('customerForm');
             const formData = new FormData(form);
 
-            // Build URL parameters
-            let params = `?nominal_id=${selectedNominalId}`;
+            let params = `?nominal_id=${selectedNominalId}&quantity=${currentQuantity}`;
             formData.forEach((value, key) => {
                 if (value.trim()) {
                     params += `&${key}=${encodeURIComponent(value)}`;
                 }
             });
 
-            // Redirect ke checkout
             window.location.href = `{{ route('checkout.create', ['product_slug' => $product->slug]) }}${params}`;
         });
 
         @if ($nominals->count() === 1)
             document.querySelectorAll('#customerForm input').forEach(input => {
                 input.addEventListener('input', function() {
-                    // Check if all inputs are filled
                     const form = document.getElementById('customerForm');
                     const inputs = form.querySelectorAll('input[required]');
                     let allFilled = true;
@@ -403,25 +397,24 @@
     </script>
 
     <style>
-        /* Smooth transitions */
         button[data-nominal-id]:not([disabled]):hover {
             transform: translateY(-1px);
             transition: all 0.2s ease;
         }
-
-        /* Selected state */
         button[data-nominal-id].border-green-500 {
             border-width: 2px;
         }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
 
-        /* Responsive adjustments */
         @media (max-width: 640px) {
             .container {
                 padding-bottom: 80px;
             }
         }
-
-        /* Animation for error */
         @keyframes shake {
 
             0%,
