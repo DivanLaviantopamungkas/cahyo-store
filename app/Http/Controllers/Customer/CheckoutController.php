@@ -49,7 +49,7 @@ class CheckoutController extends Controller
         $nominal_id = $request->get('nominal_id') ?? ($sessionData['nominal_id'] ?? null);
         $phone = $request->get('phone') ?? ($sessionData['phone'] ?? null);
         $customer_id = $request->get('customer_id') ?? ($sessionData['customer_id'] ?? null);
-        $quantity = $request->get('quantity') ?? ($sessionData['quantity'] ?? null);
+        $quantity = $request->get('quantity') ?? ($sessionData['quantity'] ?? 1);
 
         session()->forget('pending_checkout');
 

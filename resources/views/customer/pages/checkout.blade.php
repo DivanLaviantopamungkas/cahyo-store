@@ -85,7 +85,7 @@
                                         : $nominal->price;
                             
                             // Pastikan quantity ada
-                            $qty = $quantity ?? null;
+                            $qty = $quantity ?? 1;
                             
                             // Hitung total
                             $totalPayment = $unitPrice * $qty;
@@ -212,7 +212,7 @@
             formData.append('payment_method', 'qris');
             formData.append('phone', '{{ request('phone') }}');
             formData.append('customer_id', '{{ request('customer_id') }}');
-            formData.append('quantity', '{{ $quantity ?? null }}');
+            formData.append('quantity', '{{ $quantity ?? 1 }}');
 
             console.log('Sending request to: {{ route('checkout.store') }}');
 
