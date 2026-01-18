@@ -341,36 +341,6 @@
                                                 </div>
                                             </div>
 
-                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <div>
-                                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                                        Total Stok *
-                                                    </label>
-                                                    <input type="number" name="nominals[{{ $index }}][stock]" required min="0"
-                                                        class="block w-full px-4 py-3 rounded-2xl border {{ $errors->has('nominals.'.$index.'.stock') ? 'border-rose-500' : 'border-slate-300 dark:border-slate-600' }} bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                                                        value="{{ old('nominals.'.$index.'.stock', $nominal['stock'] ?? 0) }}">
-                                                    @error('nominals.'.$index.'.stock')
-                                                        <div class="text-xs text-rose-600 dark:text-rose-400 mt-1">
-                                                            {{ $message }}
-                                                        </div>
-                                                    @enderror
-                                                </div>
-
-                                                <div>
-                                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                                        Stok Tersedia *
-                                                    </label>
-                                                    <input type="number" name="nominals[{{ $index }}][available_stock]" required min="0"
-                                                        class="block w-full px-4 py-3 rounded-2xl border {{ $errors->has('nominals.'.$index.'.available_stock') ? 'border-rose-500' : 'border-slate-300 dark:border-slate-600' }} bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                                                        value="{{ old('nominals.'.$index.'.available_stock', $nominal['available_stock'] ?? 0) }}">
-                                                    @error('nominals.'.$index.'.available_stock')
-                                                        <div class="text-xs text-rose-600 dark:text-rose-400 mt-1">
-                                                            {{ $message }}
-                                                        </div>
-                                                    @enderror
-                                                </div>
-                                            </div>
-
                                             <div>
                                                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                                     Mode Stok
@@ -391,10 +361,13 @@
                                                 </div>
                                                 <div class="relative inline-block w-12 h-6">
                                                     <input type="hidden" name="nominals[{{ $index }}][is_active]" value="0">
-                                                    <input type="checkbox" name="nominals[{{ $index }}][is_active]" value="1"
+                                                    <input type="checkbox"
+                                                        id="nominal_active_{{ $index }}"
+                                                        name="nominals[{{ $index }}][is_active]"
+                                                        value="1"
                                                         {{ old('nominals.'.$index.'.is_active', $nominal['is_active'] ?? true) ? 'checked' : '' }}
                                                         class="sr-only peer">
-                                                    <label class="block w-12 h-6 rounded-full bg-slate-300 dark:bg-slate-600 peer-checked:bg-emerald-500 transition-colors cursor-pointer"></label>
+                                                    <label for="nominal_active_{{ $index }}" class="block w-12 h-6 rounded-full bg-slate-300 dark:bg-slate-600 peer-checked:bg-emerald-500 transition-colors cursor-pointer absolute top-0 left-0"></label>
                                                     <div class="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform peer-checked:translate-x-6 pointer-events-none"></div>
                                                 </div>
                                             </div>
@@ -506,26 +479,6 @@
                                             </div>
                                         </div>
 
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                                    Total Stok *
-                                                </label>
-                                                <input type="number" name="nominals[0][stock]" required min="0"
-                                                    class="block w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                                                    value="0">
-                                            </div>
-
-                                            <div>
-                                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                                    Stok Tersedia *
-                                                </label>
-                                                <input type="number" name="nominals[0][available_stock]" required min="0"
-                                                    class="block w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                                                    value="0">
-                                            </div>
-                                        </div>
-
                                         <div>
                                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                                                 Mode Stok
@@ -546,8 +499,8 @@
                                             </div>
                                             <div class="relative inline-block w-12 h-6">
                                                 <input type="hidden" name="nominals[0][is_active]" value="0">
-                                                <input type="checkbox" name="nominals[0][is_active]" value="1" checked class="sr-only peer">
-                                                <label class="block w-12 h-6 rounded-full bg-slate-300 dark:bg-slate-600 peer-checked:bg-emerald-500 transition-colors cursor-pointer"></label>
+                                                <input type="checkbox" id="nominal_active_0" name="nominals[0][is_active]" value="1" checked class="sr-only peer">
+                                                <label for="nominal_active_0" class="block w-12 h-6 rounded-full bg-slate-300 dark:bg-slate-600 peer-checked:bg-emerald-500 transition-colors cursor-pointer absolute top-0 left-0"></label>
                                                 <div class="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform peer-checked:translate-x-6 pointer-events-none"></div>
                                             </div>
                                         </div>
@@ -655,6 +608,63 @@
                 </div>
             </div>
         </form>
+    </x-admin.card>
+
+    <x-admin.card>
+        <div class="mb-4">
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Ringkasan Stok Nominal</h3>
+            <p class="text-sm text-slate-500">Stok dihitung berdasarkan jumlah 'Available' di menu Voucher Codes.</p>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                <thead class="bg-slate-50 dark:bg-slate-800">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nama Nominal</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Harga Jual</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Stok Tersedia (Voucher)</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Status Nominal</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-700">
+                    @forelse($product->product_nominals as $nominal)
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">
+                                {{ $nominal->name }}
+                                @if($nominal->provider_sku)
+                                    <span class="text-xs text-slate-500 block">SKU: {{ $nominal->provider_sku }}</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
+                                Rp {{ number_format($nominal->price, 0, ',', '.') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                @if($nominal->real_stock > 0)
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                        {{ $nominal->real_stock }}
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800">
+                                        Habis
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                @if($nominal->is_active)
+                                    <span class="text-emerald-600 font-medium text-sm">Aktif</span>
+                                @else
+                                    <span class="text-slate-400 font-medium text-sm">Nonaktif</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="px-6 py-4 text-center text-sm text-slate-500">Belum ada nominal.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </x-admin.card>
 </div>
 
@@ -851,26 +861,6 @@ function addNominal() {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                            Total Stok *
-                        </label>
-                        <input type="number" name="nominals[${nominalIndex}][stock]" required min="0"
-                            class="block w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                            value="0">
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                            Stok Tersedia *
-                        </label>
-                        <input type="number" name="nominals[${nominalIndex}][available_stock]" required min="0"
-                            class="block w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                            value="0">
-                    </div>
-                </div>
-
                 <div>
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                         Mode Stok
@@ -891,8 +881,8 @@ function addNominal() {
                     </div>
                     <div class="relative inline-block w-12 h-6">
                         <input type="hidden" name="nominals[${nominalIndex}][is_active]" value="0">
-                        <input type="checkbox" name="nominals[${nominalIndex}][is_active]" value="1" checked class="sr-only peer">
-                        <label class="block w-12 h-6 rounded-full bg-slate-300 dark:bg-slate-600 peer-checked:bg-emerald-500 transition-colors cursor-pointer"></label>
+                        <input type="checkbox" id="nominal_active_${nominalIndex}" name="nominals[${nominalIndex}][is_active]" value="1" checked class="sr-only peer">
+                        <label for="nominal_active_${nominalIndex}" class="block w-12 h-6 rounded-full bg-slate-300 dark:bg-slate-600 peer-checked:bg-emerald-500 transition-colors cursor-pointer absolute top-0 left-0"></label>
                         <div class="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-transform peer-checked:translate-x-6 pointer-events-none"></div>
                     </div>
                 </div>
@@ -945,6 +935,14 @@ function reindexNominals() {
             const oldName = input.getAttribute('name');
             const newName = oldName.replace(/nominals\[\d+\]/, `nominals[${index}]`);
             input.setAttribute('name', newName);
+
+            if(input.type === 'checkbox' && input.id.startsWith('nominal_active_')) {
+                input.id = `nominal_active_${index}`;
+                const label = input.nextElementSibling;
+                if(label && label.tagName === 'LABEL') {
+                    label.setAttribute('for', `nominal_active_${index}`);
+                }
+            }
         });
     });
 
@@ -957,8 +955,6 @@ function attachEventListeners(container) {
     const costPriceInput = container.querySelector('[name$="[cost_price]"]');
     const marginInput = container.querySelector('[name$="[margin]"]');
     const discountInput = container.querySelector('[name$="[discount_price]"]');
-    const stockInput = container.querySelector('[name$="[stock]"]');
-    const availableStockInput = container.querySelector('[name$="[available_stock]"]');
 
     function calculateMargin() {
         if (priceInput.value && costPriceInput.value) {
@@ -986,18 +982,6 @@ function attachEventListeners(container) {
                 alert('Harga diskon harus lebih kecil dari harga normal');
                 this.value = '';
                 this.focus();
-            }
-        });
-    }
-
-    if (availableStockInput && stockInput) {
-        availableStockInput.addEventListener('change', function() {
-            const stock = parseFloat(stockInput.value);
-            const available = parseFloat(this.value);
-
-            if (available > stock) {
-                alert('Stok tersedia tidak boleh lebih besar dari total stok');
-                this.value = stock;
             }
         });
     }

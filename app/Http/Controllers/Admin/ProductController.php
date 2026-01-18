@@ -557,7 +557,11 @@ class ProductController extends BaseAdminController
     {
         // Load product with product_nominals ordered by order and name
         $product->load(['product_nominals' => function ($query) {
-            $query->orderBy('order')->orderBy('name');
+            $query->orderBy('order')
+                ->orderBy('name')
+                ->withCount(['voucherCodes as real_stock' => function($q) {
+                    $q->where('status', 'available');
+                }]);
         }]);
 
         $categories = Category::where('is_active', true)
@@ -592,8 +596,6 @@ class ProductController extends BaseAdminController
             'nominals.*.discount_price' => ['nullable', 'numeric', 'min:0'],
             'nominals.*.cost_price' => ['nullable', 'numeric', 'min:0'],
             'nominals.*.margin' => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'nominals.*.stock' => ['required', 'integer', 'min:0'],
-            'nominals.*.available_stock' => ['required', 'integer', 'min:0'],
             'nominals.*.stock_mode' => ['nullable', 'in:manual,provider'],
             'nominals.*.is_active' => ['nullable', 'boolean'],
             'nominals.*.order' => ['nullable', 'integer', 'min:0'],
@@ -663,11 +665,6 @@ class ProductController extends BaseAdminController
                     throw new \Exception('Harga diskon harus lebih kecil dari harga normal pada nominal: ' . $nominal['name']);
                 }
 
-                // Validasi available_stock <= stock
-                if ($nominal['available_stock'] > $nominal['stock']) {
-                    throw new \Exception('Stok tersedia tidak boleh lebih besar dari total stok pada nominal: ' . $nominal['name']);
-                }
-
                 $nominalData = [
                     'product_id' => $product->id,
                     'name' => $nominal['name'],
@@ -676,8 +673,8 @@ class ProductController extends BaseAdminController
                     'discount_price' => $nominal['discount_price'] ?? null,
                     'cost_price' => $nominal['cost_price'] ?? null,
                     'margin' => $nominal['margin'] ?? null,
-                    'stock' => $nominal['stock'],
-                    'available_stock' => $nominal['available_stock'],
+                    'stock' => 0,
+                    'available_stock' => 0,
                     'stock_mode' => $nominal['stock_mode'] ?? 'manual',
                     'is_active' => isset($nominal['is_active']) ? (bool)$nominal['is_active'] : true,
                     'order' => $nominal['order'] ?? $index,
