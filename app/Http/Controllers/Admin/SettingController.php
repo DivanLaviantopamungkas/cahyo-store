@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Helpers\SettingHelper;
+use Illuminate\Support\Facades\Validator;
 
 class SettingController extends BaseAdminController
 {
@@ -23,36 +25,36 @@ class SettingController extends BaseAdminController
             });
     }
 
-    // Helper method untuk update settings
     private function updateSettings($group, $data, $excludes = [])
     {
         DB::beginTransaction();
 
         try {
+            $ignoredKeys = ['_token', '_method', 'submit', 'hero_slides'];
+            
             foreach ($data as $key => $value) {
-                // Skip jika di exclude
+                if (in_array($key, $ignoredKeys)) {
+                    continue;
+                }
+
                 if (in_array($key, $excludes)) {
                     continue;
                 }
 
-                // Skip jika value adalah array (selain hero_slides)
-                if (is_array($value) && $key !== 'hero_slides') {
+                if (is_array($value)) {
                     continue;
                 }
 
-                // Handle file upload untuk gambar
                 if (request()->hasFile($key)) {
                     $file = request()->file($key);
                     $path = $this->handleFileUpload($file, $key);
                     $value = $path;
                 }
 
-                // Convert boolean to string untuk checkbox
                 if (is_bool($value)) {
                     $value = $value ? '1' : '0';
                 }
 
-                // Update atau create setting
                 Setting::updateOrCreate(
                     [
                         'group' => $group,
@@ -66,6 +68,9 @@ class SettingController extends BaseAdminController
             }
 
             DB::commit();
+            
+            SettingHelper::clearCache();
+
             return true;
         } catch (\Exception $e) {
             DB::rollBack();
@@ -483,25 +488,29 @@ class SettingController extends BaseAdminController
                 );
             }
         }
+
+        SettingHelper::clearCache();
     }
 
     private function handleFileUpload($file, $key)
     {
-        // Validasi file
-        $validated = $file->validate([
-            'image' => 'mimes:jpg,jpeg,png,gif,webp|max:2048',
-        ]);
+        $validator = Validator::make(
+            ['file_upload' => $file], 
+            ['file_upload' => 'mimes:jpg,jpeg,png,gif,webp|max:2048']
+        );
 
-        // Generate nama file
+        if ($validator->fails()) {
+            throw new \Exception($validator->errors()->first());
+        }
+
         $fileName = $key . '_' . time() . '.' . $file->getClientOriginalExtension();
 
-        // Simpan di storage
         $path = $file->storeAs('settings', $fileName, 'public');
 
-        // Delete old file jika ada
-        $oldFile = Setting::where('key', $key)->value('value');
-        if ($oldFile && Storage::disk('public')->exists($oldFile)) {
-            Storage::disk('public')->delete($oldFile);
+        $oldSetting = Setting::where('key', $key)->first();
+        
+        if ($oldSetting && $oldSetting->value && Storage::disk('public')->exists($oldSetting->value)) {
+            Storage::disk('public')->delete($oldSetting->value);
         }
 
         return $path;
