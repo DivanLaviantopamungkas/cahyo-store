@@ -3,7 +3,15 @@
         <div class="flex items-center justify-between h-16">
             <!-- Logo -->
             <a href="{{ url('/') }}" class="flex items-center space-x-2">
-                <span class="text-xl font-bold text-gray-800">Cahyo<span class="text-primary">Store</span></span>
+                @if(setting('site_logo'))
+                    <img src="{{ App\Helpers\SettingHelper::getImage('site_logo') }}" 
+                        alt="{{ setting('site_name', 'CahyoStore') }}" 
+                        class="h-8 w-auto">
+                @else
+                    <span class="text-xl font-bold text-gray-800">
+                        {{ setting('site_name', 'Cahyo') }}<span class="text-primary">Store</span>
+                    </span>
+                @endif
             </a>
 
             <!-- Desktop Menu -->
