@@ -1,4 +1,4 @@
-@extends('customer.layouts.app')
+{{-- @extends('customer.layouts.app')
 
 @section('title', 'Bantuan & Support')
 
@@ -128,6 +128,83 @@
                         <a href="#" class="text-blue-400 hover:text-blue-500">
                             <i class='bx bxl-twitter text-2xl'></i>
                         </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection --}}
+
+
+
+
+
+@extends('customer.layouts.app')
+
+@section('title', 'Bantuan & Support')
+
+@section('content')
+    <div class="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+        <div class="container mx-auto px-4 py-8">
+            <div class="text-center mb-12">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Butuh Bantuan?</h1>
+                <p class="text-gray-600 max-w-2xl mx-auto">
+                    Jam Operasional: <b>{{ setting('working_hours', '09:00 - 17:00') }}</b>.<br>
+                    Kami siap membantu kendala Anda.
+                </p>
+            </div>
+
+            <div class="max-w-md mx-auto mb-12">
+                @php
+                    $waRaw = setting('whatsapp', '628123456789');
+                    // Bersihkan nomor WA
+                    $waNum = preg_replace('/[^0-9]/', '', $waRaw);
+                    if(substr($waNum, 0, 1) == '0') $waNum = '62' . substr($waNum, 1);
+                @endphp
+
+                <a href="https://wa.me/{{ $waNum }}" target="_blank"
+                    class="block bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white p-6 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                    <div class="flex items-center justify-center">
+                        <div class="mr-4"><i class='bx bxl-whatsapp text-4xl'></i></div>
+                        <div class="text-left">
+                            <h3 class="text-xl font-bold">Live Chat WhatsApp</h3>
+                            <p class="opacity-90">Hubungi {{ $waRaw }}</p>
+                        </div>
+                        <i class='bx bx-chevron-right text-2xl ml-auto'></i>
+                    </div>
+                </a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                @if(setting('email'))
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class='bx bx-envelope text-blue-600 text-2xl'></i>
+                    </div>
+                    <h3 class="font-bold text-gray-800 mb-2">Email</h3>
+                    <a href="mailto:{{ setting('email') }}" class="text-primary hover:text-primary-dark font-medium">{{ setting('email') }}</a>
+                </div>
+                @endif
+
+                @if(setting('telegram'))
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 text-center">
+                    <div class="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class='bx bxl-telegram text-sky-600 text-2xl'></i>
+                    </div>
+                    <h3 class="font-bold text-gray-800 mb-2">Telegram</h3>
+                    <a href="https://t.me/{{ str_replace('@', '', setting('telegram')) }}" target="_blank" class="text-primary hover:text-primary-dark font-medium">{{ setting('telegram') }}</a>
+                </div>
+                @endif
+
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-200 text-center">
+                    <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class='bx bxs-share-alt text-purple-600 text-2xl'></i>
+                    </div>
+                    <h3 class="font-bold text-gray-800 mb-2">Sosial Media</h3>
+                    <div class="flex justify-center space-x-4">
+                        @if(setting('facebook')) <a href="{{ setting('facebook') }}" class="text-blue-600 text-2xl"><i class='bx bxl-facebook-circle'></i></a> @endif
+                        @if(setting('instagram')) <a href="{{ setting('instagram') }}" class="text-pink-600 text-2xl"><i class='bx bxl-instagram'></i></a> @endif
+                        @if(setting('twitter')) <a href="{{ setting('twitter') }}" class="text-sky-400 text-2xl"><i class='bx bxl-twitter'></i></a> @endif
                     </div>
                 </div>
             </div>
