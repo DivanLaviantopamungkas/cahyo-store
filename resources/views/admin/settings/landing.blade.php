@@ -106,44 +106,55 @@
                                     </label>
                                     
                                     <!-- Existing Image Preview -->
-                                    <template x-if="slide.existing_image">
+                                    <template x-if="slide.existing_image && !slide.new_image_preview">
                                         <div class="mb-3 relative group">
-                                            <img :src="slide.existing_image" :alt="'Slide ' + (index + 1)" 
-                                                 class="h-40 sm:h-48 w-full object-cover rounded-lg">
-                                            <div class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
-                                                <span class="text-white text-sm">Gambar tersimpan</span>
+                                            <div class="p-1 border rounded-lg bg-slate-50">
+                                                <img :src="getStorageUrl(slide.existing_image)"
+                                                    alt="Preview" 
+                                                    class="h-40 w-full object-cover rounded-md">
+                                            </div>
+                                            <div class="mt-1 text-xs text-green-600 flex items-center">
+                                                <svg class="w-4 h-4 mr-1"><use href="#icon-check"></use></svg>
+                                                Gambar saat ini terpasang
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    <template x-if="slide.new_image_preview">
+                                        <div class="mb-3 relative">
+                                            <div class="p-1 border rounded-lg bg-emerald-50 border-emerald-200">
+                                                <img :src="slide.new_image_preview" alt="New Preview" 
+                                                    class="h-40 w-full object-cover rounded-md">
+                                            </div>
+                                            <button type="button" @click="removeNewImage(index)"
+                                                    class="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 shadow-lg"
+                                                    title="Batalkan upload ini">
+                                                <svg class="w-4 h-4"><use href="#icon-x-mark"></use></svg>
+                                            </button>
+                                            <div class="mt-1 text-xs text-emerald-600 flex items-center font-medium">
+                                                <svg class="w-4 h-4 mr-1"><use href="#icon-upload"></use></svg>
+                                                Akan diganti dengan gambar ini
                                             </div>
                                         </div>
                                     </template>
                                     
                                     <!-- File Input -->
-                                    <div class="space-y-3">
-                                        <input type="file" :id="'slide_image_' + slide.id"
-                                               @change="handleSlideImageUpload($event, index)"
-                                               :name="'hero_slides[' + index + '][image]'"
-                                               accept="image/*"
-                                               class="w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm sm:text-base transition-all file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs sm:file:text-sm file:font-medium file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 dark:file:bg-emerald-900/20 dark:file:text-emerald-300">
-                                        
-                                        <!-- New Image Preview -->
-                                        <template x-if="slide.new_image_preview">
-                                            <div class="relative">
-                                                <img :src="slide.new_image_preview" :alt="'Preview slide ' + (index + 1)" 
-                                                     class="h-40 sm:h-48 w-full object-cover rounded-lg">
-                                                <button type="button" @click="removeNewImage(index)"
-                                                        class="absolute top-2 right-2 p-1.5 bg-rose-500 text-white rounded-full hover:bg-rose-600 transition-colors">
-                                                    <svg class="w-4 h-4"><use href="#icon-x-mark"></use></svg>
-                                                </button>
-                                            </div>
-                                        </template>
-                                    </div>
-                                    
-                                    <!-- Hidden input for existing image -->
-                                    <template x-if="slide.existing_image">
-                                        <input type="hidden" :name="'hero_slides[' + index + '][existing_image]'" :value="slide.existing_image">
-                                    </template>
-                                    
-                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                                        Ukuran maksimal 2MB. Format: JPG, PNG, GIF, WebP
+                                    <input type="file" :id="'slide_image_' + slide.id"
+                                        @change="handleSlideImageUpload($event, index)"
+                                        :name="'hero_slides[' + index + '][image]'"
+                                        accept="image/*"
+                                        class="block w-full text-sm text-slate-500
+                                                file:mr-4 file:py-2 file:px-4
+                                                file:rounded-full file:border-0
+                                                file:text-sm file:font-semibold
+                                                file:bg-emerald-50 file:text-emerald-700
+                                                hover:file:bg-emerald-100
+                                                cursor-pointer">
+
+                                    <input type="hidden" :name="'hero_slides[' + index + '][existing_image]'" :value="slide.existing_image">
+
+                                    <p class="text-xs text-slate-500 mt-2">
+                                        Biarkan kosong jika tidak ingin mengubah gambar.
                                     </p>
                                 </div>
                                 
@@ -268,7 +279,24 @@ function landingApp() {
         init() {
             if (this.heroSlides.length === 0) {
                 this.addHeroSlide();
+            } else {
+                this.heroSlides.forEach(slide => {
+                    if (slide.image) {
+                        slide.existing_image = slide.image; 
+                    }
+                    slide.new_image_preview = null;
+                });
             }
+        },
+
+        getStorageUrl(path) {
+            if (!path) return '';
+            // Jika path sudah ada http atau /storage, biarkan
+            if (path.startsWith('http') || path.startsWith('/storage')) {
+                return path;
+            }
+            // Jika belum, tambahkan /storage/ di depannya
+            return '/storage/' + path;
         },
         
         addHeroSlide() {
@@ -281,10 +309,10 @@ function landingApp() {
                 image: null,
                 existing_image: null,
                 new_image_preview: null,
-                title: 'Tempat Beli Voucher Digital Terbaik',
-                description: 'Beli voucher game, pulsa, e-money dengan harga terbaik. Proses cepat dan aman.',
-                button_text: 'Mulai Sekarang',
-                button_link: '#products',
+                title: 'Judul Slide Baru',
+                description: 'Deskripsi slide baru...',
+                button_text: 'Mulai',
+                button_link: '#',
                 is_active: true,
                 order: this.heroSlides.length
             });
@@ -317,7 +345,6 @@ function landingApp() {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     this.heroSlides[index].new_image_preview = e.target.result;
-                    this.heroSlides[index].existing_image = null;
                 };
                 reader.readAsDataURL(file);
             }
@@ -325,15 +352,12 @@ function landingApp() {
         
         removeNewImage(index) {
             this.heroSlides[index].new_image_preview = null;
-            const fileInput = document.querySelector(`[name="hero_slides[${index}][image]"]`);
+            const slideId = this.heroSlides[index].id;
+            const fileInput = document.getElementById('slide_image_' + slideId);
             if (fileInput) fileInput.value = '';
         }
     };
 }
 </script>
 @endpush
-
-@if(session('toast'))
-    @include('components.admin.toast')
-@endif
 @endsection
