@@ -62,24 +62,45 @@ class CheckoutController extends Controller
                 ->with('error', 'Nominal tidak ditemukan');
         }
 
-        // Cari nominal
-        $nominal = $product->nominals()->findOrFail($nominal_id);
+        // Cari nominal dengan voucher count
+        $nominal = $product->nominals()
+            ->withCount(['voucherCodes as available_voucher_count' => function ($query) {
+                $query->where('status', 'available');
+            }])
+            ->findOrFail($nominal_id);
 
-        // Validasi stok
-        if (!$product->is_digiflazz && $nominal->available_stock == 0) {
-            return redirect()->back()
-                ->with('error', 'Maaf, stok untuk nominal ini habis');
-        }
+        // **PERBAIKAN: Validasi stok berdasarkan product source**
+        if ($product->source === 'manual' || $nominal->stock_mode === 'manual') {
+            // Untuk produk manual, cek voucher codes
+            $availableStock = $nominal->available_voucher_count ?? 0;
 
-        // Cek stok cukup untuk quantity yang diminta
-        if (!$product->is_digiflazz && $nominal->available_stock < $quantity) {
-            return redirect()->back()
-                ->with('error', 'Maaf, stok tidak mencukupi untuk jumlah pembelian ini');
+            if ($availableStock == 0) {
+                return redirect()->back()
+                    ->with('error', 'Maaf, stok voucher untuk nominal ini habis');
+            }
+
+            if ($availableStock < $quantity) {
+                return redirect()->back()
+                    ->with('error', 'Maaf, stok voucher tidak mencukupi untuk jumlah pembelian ini. Tersisa: ' . $availableStock . ' voucher');
+            }
+        } elseif ($product->source === 'digiflazz' || $nominal->stock_mode === 'provider') {
+            // Untuk produk provider, selalu available (stok dicek via API)
+            // Tidak perlu validasi stok di sini
+        } else {
+            // Fallback: cek available_stock
+            if ($nominal->available_stock == 0) {
+                return redirect()->back()
+                    ->with('error', 'Maaf, stok untuk nominal ini habis');
+            }
+
+            if ($nominal->available_stock < $quantity) {
+                return redirect()->back()
+                    ->with('error', 'Maaf, stok tidak mencukupi untuk jumlah pembelian ini');
+            }
         }
 
         return view('customer.pages.checkout', compact('product', 'nominal', 'phone', 'customer_id', 'quantity'));
     }
-
     /**
      * Step 2: Store transaction & initiate payment
      */
@@ -308,9 +329,9 @@ class CheckoutController extends Controller
     public function handleMidtransReturn(Request $request)
     {
         $orderId = $request->get('order_id');
-        
+
         $transaction = Trancsaction::where('invoice', $orderId)->first();
-        
+
         if (!$transaction) {
             return redirect()->route('home')->with('error', 'Transaksi tidak ditemukan');
         }
@@ -318,7 +339,7 @@ class CheckoutController extends Controller
         if ($transaction->status === 'pending') {
             try {
                 $status = $this->midtransService->checkStatus($orderId);
-                
+
                 if ($status) {
                     $transactionStatus = $status->transaction_status;
                     $fraudStatus = $status->fraud_status;
@@ -361,10 +382,9 @@ class CheckoutController extends Controller
                             $this->sendNotifications($transaction);
 
                             DB::commit();
-                            
+
                             // PENTING: Refresh model agar status terbaru terbaca oleh baris kode di bawah
-                            $transaction->refresh(); 
-                            
+                            $transaction->refresh();
                         } catch (\Exception $e) {
                             DB::rollBack();
                             Log::error('Auto-update return error: ' . $e->getMessage());
@@ -386,7 +406,7 @@ class CheckoutController extends Controller
             // GAGAL -> Ke Halaman Gagal
             return redirect()->route('checkout.failed', $transaction->id);
         }
-        
+
         // PENDING -> Ke Halaman Payment (Hanya jika benar-benar masih pending)
         return redirect()->route('checkout.payment', $transaction->id)
             ->with('info', 'Pembayaran sedang diproses, silakan refresh halaman ini.');
@@ -640,8 +660,8 @@ class CheckoutController extends Controller
 
         $transactionItem->refresh();
 
-        $expiredDate = $transactionItem->expired_at 
-            ? $transactionItem->expired_at->format('d F Y') 
+        $expiredDate = $transactionItem->expired_at
+            ? $transactionItem->expired_at->format('d F Y')
             : now()->addDays(30)->format('d F Y'); // Fallback default
 
         // WA 1: Kode Voucher

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProviderProduct extends Model
 {
@@ -17,6 +19,7 @@ class ProviderProduct extends Model
         'name',
         'category',
         'brand',
+        'description',
         'provider_price',
         'is_available',
         'details',

@@ -246,7 +246,7 @@
                             Reset Filter
                         </a>
                     @else
-                        <a href="{{ route('admin.products.create') }}"
+                        <a href="{{ route('admin.products.create.manual') }}"
                             class="inline-flex items-center px-4 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
                             <svg class="w-4 h-4 mr-2">
                                 <use href="#icon-plus"></use>

@@ -30,13 +30,15 @@
                         <div class="w-full md:w-1/3">
                             <div class="rounded-lg overflow-hidden bg-white border border-gray-200 shadow-sm">
                                 @if ($product->image)
-                                    <div class="bg-white flex items-center justify-center h-[180px] sm:h-[200px] md:h-[220px] lg:h-[240px]">
+                                    <div
+                                        class="bg-white flex items-center justify-center h-[180px] sm:h-[200px] md:h-[220px] lg:h-[240px]">
                                         <img src="{{ asset($product->image) }}" alt="{{ $product->name }}"
                                             class="object-contain max-h-full max-w-[220px] sm:max-w-[240px] md:max-w-[260px]"
                                             onerror="this.onerror=null; this.src='{{ asset('storage/' . $product->image) }}';">
                                     </div>
                                 @else
-                                    <div class="bg-white flex items-center justify-center h-[180px] sm:h-[200px] md:h-[220px] lg:h-[240px]">
+                                    <div
+                                        class="bg-white flex items-center justify-center h-[180px] sm:h-[200px] md:h-[220px] lg:h-[240px]">
                                         <i class='bx bx-game text-gray-500 text-5xl'></i>
                                     </div>
                                 @endif
@@ -47,55 +49,80 @@
                             <div class="mb-6">
                                 <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ $product->name }}</h1>
                                 <div class="flex items-center gap-2 mb-4">
-                                    <span class="inline-flex items-center bg-yellow-50 text-yellow-700 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                    <span
+                                        class="inline-flex items-center bg-yellow-50 text-yellow-700 text-xs font-medium px-2.5 py-0.5 rounded-full">
                                         <i class='bx bx-user-check mr-1'></i> Manual
                                     </span>
-                                    <span class="inline-flex items-center bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                    <span
+                                        class="inline-flex items-center bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-0.5 rounded-full">
                                         <i class='bx bx-time mr-1'></i> 1-10 Menit
                                     </span>
                                 </div>
-                                
+
                                 <div class="space-y-3">
-                                    @if($product->description)
+                                    @if ($product->description)
                                         <p class="text-gray-600 text-sm leading-relaxed text-justify font-bold">
                                             {{ $product->description }}
                                         </p>
                                     @endif
-                                    
+
                                     <p class="text-gray-500 text-sm">
                                         Pilih nominal yang diinginkan untuk melanjutkan.
                                     </p>
                                 </div>
                             </div>
 
-                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-lg font-semibold text-gray-900">Pilih Variasi</h2>
-                        <div class="text-xs text-gray-500">
+                        {{-- <div class="text-xs text-gray-500">
                             <i class='bx bx-info-circle mr-1'></i>
                             Harga sudah termasuk biaya admin
-                        </div>
+                        </div> --}}
                     </div>
 
                     @if ($nominals->count() > 0)
                         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                             @foreach ($nominals as $nominal)
+                                @php
+                                    // Untuk produk manual: gunakan is_available dari controller
+                                    // Untuk backward compatibility, gunakan available_stock jika is_available tidak ada
+                                    $isAvailable = isset($nominal->is_available)
+                                        ? $nominal->is_available
+                                        : $nominal->available_stock > 0;
+
+                                    $stockText = isset($nominal->display_stock)
+                                        ? $nominal->display_stock
+                                        : ($isAvailable
+                                            ? 'Tersedia'
+                                            : 'Stok Habis');
+
+                                    $remainingStock = 0;
+                                    if ($nominal->stock_mode === 'manual') {
+                                        $remainingStock = $nominal->available_voucher_codes_count ?? 0;
+                                    } else {
+                                        $remainingStock = $nominal->available_stock ?? 0;
+                                    }
+                                @endphp
+
                                 <button onclick="selectNominal({{ $nominal->id }})"
                                     class="relative group border rounded-lg p-4 text-center transition-all duration-200
-                                           {{ $nominal->available_stock == 0
-                                               ? 'bg-gray-100 border-gray-300 cursor-not-allowed opacity-60'
-                                               : 'bg-white border-gray-300 hover:border-green-500 hover:shadow-sm hover:bg-green-50' }}"
-                                    data-nominal-id="{{ $nominal->id }}"
-                                    {{ $nominal->available_stock == 0 ? 'disabled' : '' }}>
+                       {{ !$isAvailable
+                           ? 'bg-gray-100 border-gray-300 cursor-not-allowed opacity-60'
+                           : 'bg-white border-gray-300 hover:border-green-500 hover:shadow-sm hover:bg-green-50' }}"
+                                    data-nominal-id="{{ $nominal->id }}" data-stock-mode="{{ $nominal->stock_mode }}"
+                                    data-voucher-count="{{ $nominal->available_voucher_codes_count ?? 0 }}"
+                                    {{ !$isAvailable ? 'disabled' : '' }}>
 
-                                    @if ($nominal->available_stock == 0)
-                                        <div class="absolute inset-0 bg-white/90 rounded-lg flex items-center justify-center z-10">
+                                    @if (!$isAvailable)
+                                        <div
+                                            class="absolute inset-0 bg-white/90 rounded-lg flex items-center justify-center z-10">
                                             <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                                                STOK HABIS
+                                                {{ $stockText }}
                                             </span>
                                         </div>
                                     @endif
@@ -114,11 +141,13 @@
                                             </div>
                                             @php
                                                 $discount = round(
-                                                    (($nominal->price - $nominal->discount_price) / $nominal->price) * 100
+                                                    (($nominal->price - $nominal->discount_price) / $nominal->price) *
+                                                        100,
                                                 );
                                             @endphp
                                             <div class="mt-2">
-                                                <span class="inline-block bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded">
+                                                <span
+                                                    class="inline-block bg-red-100 text-red-700 text-xs font-medium px-2 py-0.5 rounded">
                                                     Hemat {{ $discount }}%
                                                 </span>
                                             </div>
@@ -129,11 +158,23 @@
                                         @endif
                                     </div>
 
-                                    @if ($nominal->available_stock <= 5 && $nominal->available_stock > 0)
+                                    <!-- Tampilkan stok tersisa hanya untuk produk manual -->
+                                    @if ($nominal->stock_mode === 'manual' && $remainingStock > 0 && $remainingStock <= 10)
                                         <div class="text-xs text-red-600 font-medium mt-2">
-                                            <i class='bx bx-error-circle mr-1'></i> Tersisa {{ $nominal->available_stock }}
+                                            <i class='bx bx-error-circle mr-1'></i>
+                                            Tersisa {{ $remainingStock }} voucher
                                         </div>
                                     @endif
+
+                                    <!-- Debug info (hapus setelah testing) -->
+                                    <div class="text-xs text-gray-400 mt-1">
+                                        Mode: {{ $nominal->stock_mode }} |
+                                        @if ($nominal->stock_mode === 'manual')
+                                            Voucher: {{ $nominal->available_voucher_codes_count ?? 0 }}
+                                        @else
+                                            Stock: {{ $nominal->available_stock ?? 0 }}
+                                        @endif
+                                    </div>
                                 </button>
                             @endforeach
                         </div>
@@ -144,22 +185,21 @@
                                     <h4 class="text-sm font-medium text-gray-900">Atur Jumlah Pembelian</h4>
                                     <p class="text-xs text-gray-500 mt-1">Masukkan jumlah voucher yang ingin dibeli</p>
                                 </div>
-                                
+
                                 <div class="flex items-center">
-                                    <button type="button" onclick="updateQuantity(-1)" 
+                                    <button type="button" onclick="updateQuantity(-1)"
                                         class="w-10 h-10 rounded-l-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-600 transition-colors">
                                         <i class='bx bx-minus'></i>
                                     </button>
                                     <input type="number" id="quantity" value="1" min="1" readonly
                                         class="w-16 h-10 border-t border-b border-gray-300 text-center text-gray-900 font-medium focus:outline-none focus:ring-0">
-                                    <button type="button" onclick="updateQuantity(1)" 
+                                    <button type="button" onclick="updateQuantity(1)"
                                         class="w-10 h-10 rounded-r-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-600 transition-colors">
                                         <i class='bx bx-plus'></i>
                                     </button>
                                 </div>
                             </div>
                         </div>
-
                     @else
                         <div class="text-center py-12">
                             <div class="text-gray-300 mb-4">
@@ -220,13 +260,19 @@
             if (!selectedNominalId) return;
 
             const isLoggedIn = {{ auth()->check() ? 'true' : 'false' }};
-            const checkoutUrl = `{{ route('checkout.create', ['product_slug' => $product->slug]) }}?nominal_id=${selectedNominalId}&product_type=manual&quantity=${currentQuantity}`;
+            const checkoutUrl =
+                `{{ route('checkout.create', ['product_slug' => $product->slug]) }}?nominal_id=${selectedNominalId}&product_type=manual&quantity=${currentQuantity}`;
 
             if (!isLoggedIn) {
                 window.location.href = checkoutUrl;
             } else {
                 window.location.href = checkoutUrl;
             }
+
+            console.log('Redirecting to:', checkoutUrl); // Debug log
+
+            // Redirect
+            window.location.href = checkoutUrl;
         });
 
         @if ($nominals->count() === 1)
@@ -250,12 +296,12 @@
         button[data-nominal-id].border-green-500 {
             border-width: 2px;
         }
-        
+
         /* Hilangkan spinner input number */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
         @media (max-width: 640px) {

@@ -66,12 +66,12 @@
                             </div>
 
                             <div class="space-y-3">
-                                @if($product->description)
+                                @if ($product->description)
                                     <p class="text-gray-600 text-sm leading-relaxed text-justify font-bold">
                                         {{ $product->description }}
                                     </p>
                                 @endif
-                                
+
                                 <p class="text-gray-500 text-sm">
                                     Isi informasi akun Anda dan pilih nominal untuk melanjutkan.
                                 </p>
@@ -154,28 +154,52 @@
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-lg font-semibold text-gray-900">2. Pilih Nominal</h2>
-                        <div class="text-xs text-gray-500">
+                        {{-- <div class="text-xs text-gray-500">
                             <i class='bx bx-info-circle mr-1'></i>
                             Harga sudah termasuk biaya admin
-                        </div>
+                        </div> --}}
                     </div>
 
                     @if ($nominals->count() > 0)
                         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                             @foreach ($nominals as $nominal)
-                                <button onclick="handleNominalClick({{ $nominal->id }})"
-                                    class="relative group border rounded-lg p-4 text-center transition-all duration-200
-                                           {{ $nominal->available_stock == 0
-                                               ? 'bg-gray-100 border-gray-300 cursor-not-allowed opacity-60'
-                                               : 'bg-white border-gray-300 hover:border-green-500 hover:shadow-sm hover:bg-green-50' }}"
-                                    data-nominal-id="{{ $nominal->id }}"
-                                    {{ $nominal->available_stock == 0 ? 'disabled' : '' }}>
+                                @php
+                                    // LOGIKA STOK YANG BENAR:
+                                    $isDisabled = false;
+                                    $stockStatus = 'Tersedia';
 
-                                    @if ($nominal->available_stock == 0)
+                                    if ($nominal->stock_mode === 'provider') {
+                                        // Provider: selalu tersedia (stok dicek via API)
+                                        $isDisabled = false;
+                                        $stockStatus = 'Tersedia';
+                                    } elseif ($nominal->stock_mode === 'manual') {
+                                        // Manual: cek voucher codes
+                                        $voucherCount = $nominal->available_voucher_codes_count ?? 0;
+                                        $isDisabled = $voucherCount === 0;
+                                        $stockStatus = $isDisabled ? 'Stok Habis' : 'Tersedia';
+                                    } else {
+                                        // Fallback: cek available_stock
+                                        $isDisabled = ($nominal->available_stock ?? 0) === 0;
+                                        $stockStatus = $isDisabled ? 'Stok Habis' : 'Tersedia';
+                                    }
+
+                                    // Tentukan class CSS berdasarkan status
+                                    $buttonClass = $isDisabled
+                                        ? 'bg-gray-100 border-gray-300 cursor-not-allowed opacity-60'
+                                        : 'bg-white border-gray-300 hover:border-green-500 hover:shadow-sm hover:bg-green-50';
+                                @endphp
+
+                                <button onclick="handleNominalClick({{ $nominal->id }})"
+                                    class="relative group border rounded-lg p-4 text-center transition-all duration-200 {{ $buttonClass }}"
+                                    data-nominal-id="{{ $nominal->id }}" data-stock-mode="{{ $nominal->stock_mode }}"
+                                    data-available="{{ $isDisabled ? 'false' : 'true' }}"
+                                    {{ $isDisabled ? 'disabled' : '' }}>
+
+                                    @if ($isDisabled)
                                         <div
                                             class="absolute inset-0 bg-white/90 rounded-lg flex items-center justify-center z-10">
                                             <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                                                STOK HABIS
+                                                {{ $stockStatus }}
                                             </span>
                                         </div>
                                     @endif
@@ -219,31 +243,14 @@
                                             Tanpa Potongan Admin
                                         </div>
                                     @endif
+
+                                    <!-- Stock Indicator (hanya untuk debug) -->
+                                    <div class="mt-1 text-xs {{ $isDisabled ? 'text-red-500' : 'text-green-500' }}">
+                                        <i class='bx {{ $isDisabled ? 'bx-x-circle' : 'bx-check-circle' }}'></i>
+                                        {{ $stockStatus }}
+                                    </div>
                                 </button>
                             @endforeach
-                        </div>
-
-                        <!-- Info Section -->
-                        <div class="mt-8 pt-6 border-t border-gray-200">
-                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                <div>
-                                    <h4 class="text-sm font-medium text-gray-900">Atur Jumlah Pembelian</h4>
-                                    <p class="text-xs text-gray-500 mt-1">Masukkan jumlah yang ingin dibeli</p>
-                                </div>
-                                
-                                <div class="flex items-center">
-                                    <button type="button" onclick="updateQuantity(-1)" 
-                                        class="w-10 h-10 rounded-l-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-600 transition-colors">
-                                        <i class='bx bx-minus'></i>
-                                    </button>
-                                    <input type="number" id="quantity" value="1" min="1" readonly
-                                        class="w-16 h-10 border-t border-b border-gray-300 text-center text-gray-900 font-medium focus:outline-none focus:ring-0">
-                                    <button type="button" onclick="updateQuantity(1)" 
-                                        class="w-10 h-10 rounded-r-lg border border-gray-300 bg-gray-50 hover:bg-gray-100 flex items-center justify-center text-gray-600 transition-colors">
-                                        <i class='bx bx-plus'></i>
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                     @else
                         <div class="text-center py-12">
@@ -292,7 +299,7 @@
         function updateQuantity(change) {
             const qtyInput = document.getElementById('quantity');
             let newQty = currentQuantity + change;
-            
+
             if (newQty < 1) newQty = 1;
 
             currentQuantity = newQty;
@@ -401,13 +408,15 @@
             transform: translateY(-1px);
             transition: all 0.2s ease;
         }
+
         button[data-nominal-id].border-green-500 {
             border-width: 2px;
         }
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
+
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
         @media (max-width: 640px) {
@@ -415,6 +424,7 @@
                 padding-bottom: 80px;
             }
         }
+
         @keyframes shake {
 
             0%,

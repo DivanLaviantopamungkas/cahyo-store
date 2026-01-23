@@ -35,12 +35,33 @@ class ProductController extends Controller
             ->where('is_active', 1)
             ->firstOrFail();
 
-        // Ambil nominals
         $nominals = ProductNominal::query()
             ->where('product_id', $product->id)
             ->where('is_active', 1)
             ->orderBy('order')
-            ->get(['id', 'name', 'price', 'discount_price', 'available_stock']);
+            ->withCount(['voucherCodes as available_voucher_codes_count' => function ($query) {
+                $query->where('status', 'available');
+            }])
+            ->get(['id', 'name', 'price', 'discount_price', 'available_stock', 'stock_mode']);
+
+        // **LOGIKA YANG BENAR:**
+        $nominals->each(function ($nominal) use ($product) {
+            // Determine if nominal is available
+            if ($nominal->stock_mode === 'provider') {
+                // Untuk provider: selalu available (stock dicek via API)
+                $nominal->is_available = true;
+                $nominal->display_stock = 'Tersedia'; // Text untuk display
+            } elseif ($nominal->stock_mode === 'manual') {
+                // Untuk manual: cek voucher codes
+                $voucherCount = $nominal->available_voucher_codes_count ?? 0;
+                $nominal->is_available = $voucherCount > 0;
+                $nominal->display_stock = $voucherCount > 0 ? 'Tersedia' : 'Stok Habis';
+            } else {
+                // Fallback
+                $nominal->is_available = ($nominal->available_stock ?? 0) > 0;
+                $nominal->display_stock = ($nominal->available_stock ?? 0) > 0 ? 'Tersedia' : 'Stok Habis';
+            }
+        });
 
         // Ambil related products (maksimal 4 produk)
         $categoryColumn = $this->getCategoryColumnName();

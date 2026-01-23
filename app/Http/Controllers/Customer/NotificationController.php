@@ -62,7 +62,7 @@ class NotificationController extends Controller
             return redirect($notification->link);
         }
 
-        return redirect()->route('notifications.index');
+        return redirect()->route('customer.pages.notification-show', $notification->id);
     }
 
     public function markAllAsRead()

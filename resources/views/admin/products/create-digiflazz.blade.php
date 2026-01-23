@@ -27,13 +27,24 @@
     <div class="space-y-6">
         <div class="flex justify-between items-center">
             <h2 class="text-2xl font-bold text-slate-800 dark:text-white">Import Produk dari Digiflazz</h2>
-            <a href="{{ route('admin.products.create.manual') }}"
-                class="inline-flex items-center px-4 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-colors">
-                <svg class="w-4 h-4 mr-2">
-                    <use href="#icon-edit"></use>
-                </svg>
-                Buat Manual
-            </a>
+            <div class="flex items-center space-x-3">
+                <!-- Tombol Import Semua -->
+                <button type="button" onclick="showBulkImportModal()"
+                    class="inline-flex items-center px-4 py-2 rounded-2xl bg-purple-500 hover:bg-purple-600 text-white font-medium transition-colors">
+                    <svg class="w-4 h-4 mr-2">
+                        <use href="#icon-download"></use>
+                    </svg>
+                    Import Semua Produk
+                </button>
+
+                <a href="{{ route('admin.products.create.manual') }}"
+                    class="inline-flex items-center px-4 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-colors">
+                    <svg class="w-4 h-4 mr-2">
+                        <use href="#icon-edit"></use>
+                    </svg>
+                    Buat Manual
+                </a>
+            </div>
         </div>
 
         <x-admin.card>
@@ -157,6 +168,14 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Auto Fill Nominals Section -->
+                    <div id="autoFillSection" class="hidden">
+                        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Nominal Produk</h3>
+                        <div id="autoNominalsContainer" class="space-y-4">
+                            <!-- Nominals akan diisi otomatis oleh JavaScript -->
                         </div>
                     </div>
 
@@ -355,7 +374,7 @@
                                                 </label>
                                                 <input type="number" name="nominals[0][stock]" required min="0"
                                                     class="block w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                                    value="{{ old('nominals.0.stock', 0) }}">
+                                                    value="{{ old('nominals.0.stock', 9999) }}">
                                             </div>
 
                                             <div>
@@ -366,7 +385,7 @@
                                                 <input type="number" name="nominals[0][available_stock]" required
                                                     min="0"
                                                     class="block w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                                    value="{{ old('nominals.0.available_stock', 0) }}">
+                                                    value="{{ old('nominals.0.available_stock', 9999) }}">
                                             </div>
                                         </div>
 
@@ -511,8 +530,232 @@
         </x-admin.card>
     </div>
 
+    <!-- Bulk Import Modal -->
+    <!-- Bulk Import Modal -->
+    <div id="bulkImportModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-white">Import Semua Produk</h3>
+                <button type="button" onclick="closeBulkImportModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-5 h-5">
+                        <use href="#icon-x"></use>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="bulkImportForm" action="{{ route('admin.products.products.import-all-digiflazz') }}"
+                method="POST">
+                @csrf
+
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                            Provider *
+                        </label>
+                        <select name="provider_id" id="bulkProviderId" required onchange="loadProviderCategories()"
+                            class="block w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                            <option value="">Pilih Provider</option>
+                            @foreach ($providers as $provider)
+                                <option value="{{ $provider->id }}">{{ $provider->name }} ({{ $provider->code }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div id="providerCategoriesSection" class="hidden">
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Filter Kategori Digiflazz (Opsional)
+                                </label>
+                                <button type="button" onclick="toggleAllCategories()"
+                                    class="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300">
+                                    Pilih Semua
+                                </button>
+                            </div>
+
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                                Kosongkan untuk import semua produk
+                            </div>
+
+                            <div id="providerCategoriesContainer"
+                                class="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                                <!-- Kategori akan diisi otomatis oleh JavaScript -->
+                            </div>
+
+                            <div id="categoryLoading" class="hidden text-center py-6">
+                                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                                <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">Memuat kategori...</p>
+                            </div>
+
+                            <div id="noCategoriesMessage" class="hidden">
+                                <div
+                                    class="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                                    <p class="text-sm text-amber-700 dark:text-amber-300">
+                                        Tidak ada kategori tersedia. Semua produk akan diimport.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pilihan kategori: manual atau auto -->
+                    <div>
+                        <div class="mb-4">
+                            <div class="flex items-center space-x-3 mb-3">
+                                <input type="radio" id="categoryOptionAuto" name="category_option" value="auto"
+                                    checked class="text-blue-600 focus:ring-blue-500">
+                                <label for="categoryOptionAuto"
+                                    class="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Buat Kategori Otomatis dari Digiflazz
+                                </label>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <input type="radio" id="categoryOptionManual" name="category_option" value="manual"
+                                    class="text-blue-600 focus:ring-blue-500">
+                                <label for="categoryOptionManual"
+                                    class="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                    Pilih Kategori Manual
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Kategori Manual (hidden by default) -->
+                        <div id="manualCategorySection" class="hidden">
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Pilih Kategori Lokal
+                            </label>
+                            <select name="category_id"
+                                class="block w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                <option value="">Pilih Kategori Lokal</option>
+                                @foreach ($categories as $category)
+                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                @endforeach
+                            </select>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Semua produk akan disimpan di kategori ini
+                            </p>
+                        </div>
+
+                        <!-- Info Auto Category -->
+                        <div id="autoCategoryInfo"
+                            class="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl">
+                            <p class="text-sm text-blue-700 dark:text-blue-300">
+                                <span class="font-medium">📁 Buat Kategori Otomatis:</span><br>
+                                • Kategori akan dibuat otomatis dari nama kategori Digiflazz<br>
+                                • Jika kategori sudah ada, akan digunakan kategori yang ada<br>
+                                • Produk akan dikelompokkan berdasarkan kategori aslinya
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Margin (%) *
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="margin" required min="0" max="100"
+                                    step="0.5" value="10"
+                                    class="block w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <span class="text-slate-500">%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                                Tipe Produk *
+                            </label>
+                            <select name="type" required
+                                class="block w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                <option value="multiple" selected>Multiple (Kelompok berdasarkan brand)</option>
+                                <option value="single">Single (Setiap produk terpisah)</option>
+                            </select>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Multiple: Produk dikelompokkan berdasarkan brand<br>
+                                Single: Setiap produk dibuat terpisah
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar untuk Import -->
+                    <div id="importProgress" class="hidden space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-700 dark:text-slate-300">Progress</span>
+                            <span id="progressPercentage" class="font-medium">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                            <div id="progressBar" class="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                                style="width: 0%"></div>
+                        </div>
+                        <p id="progressText" class="text-xs text-slate-500 dark:text-slate-400">
+                            Menyiapkan import...
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeBulkImportModal()"
+                            class="px-6 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">
+                            Batal
+                        </button>
+                        <button type="submit" id="submitBulkImport"
+                            class="px-6 py-3 rounded-2xl bg-purple-500 hover:bg-purple-600 text-white font-semibold transition-colors">
+                            Mulai Import
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bulk Import Success Modal -->
+    <div id="bulkImportSuccessModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md p-8">
+            <div class="text-center">
+                <div
+                    class="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-emerald-600 dark:text-emerald-400">
+                        <use href="#icon-check"></use>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-2" id="successTitle">Import Berhasil!
+                </h3>
+                <p class="text-slate-600 dark:text-slate-400 mb-4" id="successMessage"></p>
+                <p id="failedProducts" class="text-xs text-slate-500 dark:text-slate-400 hidden"></p>
+                <div class="mt-6">
+                    <button type="button" onclick="closeSuccessModal()"
+                        class="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium transition-colors">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
         <script>
+            // Bulk Import Modal Functions
+            function showBulkImportModal() {
+                document.getElementById('bulkImportModal').classList.remove('hidden');
+                document.getElementById('providerCategoriesSection').classList.add('hidden');
+                document.getElementById('providerCategoriesContainer').innerHTML = '';
+                document.getElementById('bulkProviderId').value = '';
+            }
+
+            function closeBulkImportModal() {
+                document.getElementById('bulkImportModal').classList.add('hidden');
+                document.getElementById('providerCategoriesSection').classList.add('hidden');
+                document.getElementById('importProgress').classList.add('hidden');
+            }
+
+            function closeSuccessModal() {
+                document.getElementById('bulkImportSuccessModal').classList.add('hidden');
+            }
+
             // Load provider products (existing function)
             function loadProviderProducts() {
                 const providerId = document.getElementById('provider_id').value;
@@ -583,6 +826,115 @@
                     });
             }
 
+            // Load provider categories
+            function loadProviderCategories() {
+                const providerId = document.getElementById('bulkProviderId').value;
+                const categoriesContainer = document.getElementById('providerCategoriesContainer');
+                const categoriesSection = document.getElementById('providerCategoriesSection');
+                const loading = document.getElementById('categoryLoading');
+
+                if (!providerId) {
+                    categoriesSection.classList.add('hidden');
+                    return;
+                }
+
+                // Show loading
+                loading.classList.remove('hidden');
+                categoriesSection.classList.remove('hidden');
+                categoriesContainer.innerHTML = '';
+
+                const url = `{{ route('admin.products.products.provider-categories', ':id') }}`.replace(':id', providerId);
+
+                fetch(url, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(categories => {
+                        loading.classList.add('hidden');
+
+                        if (categories.length === 0) {
+                            categoriesContainer.innerHTML = `
+                                <div class="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
+                                    <p class="text-sm text-amber-700 dark:text-amber-300">
+                                        Tidak ada kategori tersedia. Semua produk akan diimport.
+                                    </p>
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        // Add select all option
+                        categoriesContainer.innerHTML = `
+                            <div class="mb-2">
+                                <label class="flex items-center space-x-2 text-sm">
+                                    <input type="checkbox" id="selectAllCategories" onchange="toggleAllCategories()"
+                                           class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="font-medium text-slate-700 dark:text-slate-300">Pilih Semua</span>
+                                </label>
+                            </div>
+                            <div class="max-h-48 overflow-y-auto space-y-1 p-1">
+                        `;
+
+                        categories.forEach((category, index) => {
+                            const categoryId = `category_${index}`;
+                            categoriesContainer.innerHTML += `
+                                <div class="flex items-center space-x-2 p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-lg">
+                                    <input type="checkbox" id="${categoryId}" name="provider_categories[]"
+                                           value="${category.value}"
+                                           class="category-checkbox rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                           onchange="updateSelectAll()">
+                                    <label for="${categoryId}" class="flex-1 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
+                                        ${category.label}
+                                    </label>
+                                </div>
+                            `;
+                        });
+
+                        categoriesContainer.innerHTML += `</div>`;
+                    })
+                    .catch(error => {
+                        console.error('Error loading categories:', error);
+                        loading.classList.add('hidden');
+                        categoriesContainer.innerHTML = `
+                            <div class="p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl">
+                                <p class="text-sm text-rose-700 dark:text-rose-300">
+                                    Gagal memuat kategori. Anda tetap dapat melanjutkan import semua produk.
+                                </p>
+                            </div>
+                        `;
+                    });
+            }
+
+            // Toggle semua kategori
+            function toggleAllCategories() {
+                const selectAll = document.getElementById('selectAllCategories');
+                const checkboxes = document.querySelectorAll('.category-checkbox');
+
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = selectAll.checked;
+                });
+            }
+
+            // Update select all checkbox
+            function updateSelectAll() {
+                const checkboxes = document.querySelectorAll('.category-checkbox');
+                const selectAll = document.getElementById('selectAllCategories');
+
+                if (checkboxes.length > 0) {
+                    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                    selectAll.checked = allChecked;
+                }
+            }
+
             // Show product preview
             function showProductPreview(product) {
                 const preview = document.getElementById('productPreview');
@@ -592,7 +944,7 @@
                 document.getElementById('previewSku').textContent = product.sku;
                 document.getElementById('previewCategory').textContent = product.category || '-';
                 document.getElementById('previewBrand').textContent = product.brand || '-';
-                document.getElementById('previewPrice').textContent = `Rp ${product.price}`;
+                document.getElementById('previewPrice').textContent = `Rp ${parseInt(product.price).toLocaleString()}`;
 
                 const description = product.details?.description || '-';
                 document.getElementById('previewDescription').textContent = description;
@@ -615,12 +967,11 @@
                     descField.value = description;
                 }
 
-                // Auto-fill nominal data jika hanya ada 1 nominal
-                if (document.getElementById('type').value === 'single') {
-                    const costPriceInput = document.querySelector('input[name="nominals[0][cost_price]"]');
-                    if (costPriceInput && !costPriceInput.value) {
-                        costPriceInput.value = product.price;
-                    }
+                // Auto-fill nominal data
+                const costPriceInput = document.querySelector('input[name="nominals[0][cost_price]"]');
+                if (costPriceInput && !costPriceInput.value) {
+                    costPriceInput.value = product.price;
+                    calculatePrice(costPriceInput);
                 }
 
                 preview.classList.remove('hidden');
@@ -637,14 +988,44 @@
                 }
             });
 
-            // Initialize on page load
-            document.addEventListener('DOMContentLoaded', function() {
-                const oldProviderId = "{{ old('provider_id') }}";
-                if (oldProviderId) {
-                    document.getElementById('provider_id').value = oldProviderId;
-                    loadProviderProducts();
+            // Calculate price from cost price and margin
+            function calculatePrice(input) {
+                const container = input.closest('.nominal-item');
+                if (!container) return;
+
+                const costPriceInput = container.querySelector('[name$="[cost_price]"]');
+                const marginInput = container.querySelector('[name$="[margin]"]');
+                const priceInput = container.querySelector('[name$="[price]"]');
+
+                if (costPriceInput && marginInput && priceInput) {
+                    const cost = parseFloat(costPriceInput.value) || 0;
+                    const margin = parseFloat(marginInput.value) || 0;
+                    const marginPercent = margin / 100;
+
+                    if (cost > 0 && marginPercent > 0) {
+                        const price = cost / (1 - marginPercent);
+                        priceInput.value = Math.ceil(price / 100) * 100;
+                    }
                 }
-            });
+            }
+
+            // Attach event listeners to price calculation
+            function attachPriceCalculation(container) {
+                const costPriceInput = container.querySelector('[name$="[cost_price]"]');
+                const marginInput = container.querySelector('[name$="[margin]"]');
+
+                if (costPriceInput) {
+                    costPriceInput.addEventListener('change', function() {
+                        calculatePrice(this);
+                    });
+                }
+
+                if (marginInput) {
+                    marginInput.addEventListener('change', function() {
+                        calculatePrice(this);
+                    });
+                }
+            }
 
             // Nominal management
             let nominalIndex = {{ count(old('nominals', [])) }};
@@ -756,7 +1137,7 @@
                                     </label>
                                     <input type="number" name="nominals[${nominalIndex}][stock]" required min="0"
                                         class="block w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        value="0">
+                                        value="9999">
                                 </div>
 
                                 <div>
@@ -765,7 +1146,7 @@
                                     </label>
                                     <input type="number" name="nominals[${nominalIndex}][available_stock]" required min="0"
                                         class="block w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        value="0">
+                                        value="9999">
                                 </div>
                             </div>
 
@@ -802,7 +1183,7 @@
                 nominalIndex++;
 
                 // Attach event listeners
-                attachEventListeners(template);
+                attachPriceCalculation(template);
             }
 
             function removeNominal(button) {
@@ -840,61 +1221,19 @@
                 nominalIndex = items.length;
             }
 
-            function attachEventListeners(container) {
-                // Auto calculate price from cost price and margin
-                const costPriceInput = container.querySelector('[name$="[cost_price]"]');
-                const marginInput = container.querySelector('[name$="[margin]"]');
-                const priceInput = container.querySelector('[name$="[price]"]');
-                const discountInput = container.querySelector('[name$="[discount_price]"]');
-                const stockInput = container.querySelector('[name$="[stock]"]');
-                const availableStockInput = container.querySelector('[name$="[available_stock]"]');
-
-                function calculatePrice() {
-                    if (costPriceInput.value && marginInput.value) {
-                        const cost = parseFloat(costPriceInput.value);
-                        const margin = parseFloat(marginInput.value) / 100;
-                        const price = cost / (1 - margin);
-                        priceInput.value = Math.ceil(price / 100) * 100; // Round up to nearest 100
-                    }
-                }
-
-                if (costPriceInput && marginInput && priceInput) {
-                    costPriceInput.addEventListener('change', calculatePrice);
-                    marginInput.addEventListener('change', calculatePrice);
-                }
-
-                if (discountInput && priceInput) {
-                    discountInput.addEventListener('change', function() {
-                        const price = parseFloat(priceInput.value);
-                        const discount = parseFloat(this.value);
-
-                        if (discount && price && discount >= price) {
-                            alert('Harga diskon harus lebih kecil dari harga normal');
-                            this.value = '';
-                            this.focus();
-                        }
-                    });
-                }
-
-                if (availableStockInput && stockInput) {
-                    availableStockInput.addEventListener('change', function() {
-                        const stock = parseFloat(stockInput.value);
-                        const available = parseFloat(this.value);
-
-                        if (available > stock) {
-                            alert('Stok tersedia tidak boleh lebih besar dari total stok');
-                            this.value = stock;
-                        }
-                    });
-                }
-            }
-
             // Initialize event listeners for existing nominals
             document.addEventListener('DOMContentLoaded', function() {
                 const initialItems = document.querySelectorAll('.nominal-item');
                 initialItems.forEach(item => {
-                    attachEventListeners(item);
+                    attachPriceCalculation(item);
                 });
+
+                // Handle old provider selection
+                const oldProviderId = "{{ old('provider_id') }}";
+                if (oldProviderId) {
+                    document.getElementById('provider_id').value = oldProviderId;
+                    setTimeout(() => loadProviderProducts(), 100);
+                }
             });
 
             // Handle product type change
@@ -919,16 +1258,166 @@
                 }
             });
 
-            // Initialize based on current type
-            document.addEventListener('DOMContentLoaded', function() {
-                const typeSelect = document.getElementById('type');
-                if (typeSelect.value === 'single') {
-                    const addButton = document.querySelector('#nominalsSection button');
-                    if (addButton) {
-                        addButton.style.display = 'none';
+            // Handle category option change
+            document.querySelectorAll('input[name="category_option"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const manualSection = document.getElementById('manualCategorySection');
+                    const autoInfo = document.getElementById('autoCategoryInfo');
+
+                    if (this.value === 'manual') {
+                        manualSection.classList.remove('hidden');
+                        autoInfo.classList.add('hidden');
+                        // Set required attribute for manual category select
+                        manualSection.querySelector('select').required = true;
+                    } else {
+                        manualSection.classList.add('hidden');
+                        autoInfo.classList.remove('hidden');
+                        // Remove required attribute
+                        manualSection.querySelector('select').required = false;
                     }
+                });
+            });
+
+            // Update form submission to handle category option
+            document.getElementById('bulkImportForm')?.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const providerId = this.querySelector('[name="provider_id"]').value;
+                const submitBtn = document.getElementById('submitBulkImport');
+
+                if (!providerId) {
+                    alert('Harap pilih provider terlebih dahulu');
+                    return;
+                }
+
+                // Check category option
+                const categoryOption = document.querySelector('input[name="category_option"]:checked').value;
+                const manualCategoryId = document.querySelector('select[name="category_id"]').value;
+
+                if (categoryOption === 'manual' && !manualCategoryId) {
+                    alert('Harap pilih kategori manual terlebih dahulu');
+                    return;
+                }
+
+                // Prepare form data
+                const formData = new FormData(this);
+                formData.append('auto_create_category', categoryOption === 'auto' ? '1' : '0');
+
+                // Remove category_id if auto mode
+                if (categoryOption === 'auto') {
+                    formData.delete('category_id');
+                }
+
+                // Disable submit button and show progress
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `
+        <div class="flex items-center justify-center">
+            <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+            Memproses...
+        </div>
+    `;
+
+                const importProgress = document.getElementById('importProgress');
+                importProgress.classList.remove('hidden');
+
+                // Update progress indicator
+                const progressBar = document.getElementById('progressBar');
+                const progressPercentage = document.getElementById('progressPercentage');
+                const progressText = document.getElementById('progressText');
+
+                progressBar.style.width = '10%';
+                progressPercentage.textContent = '10%';
+                progressText.textContent = 'Menyiapkan data import...';
+
+                // Collect selected categories
+                const selectedCategories = Array.from(document.querySelectorAll(
+                        'input[name="provider_categories[]"]:checked'))
+                    .map(cb => cb.value);
+
+                formData.append('selected_categories', JSON.stringify(selectedCategories));
+
+                try {
+                    // Submit form
+                    const response = await fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
+                                'content')
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Show success modal with category info
+                        document.getElementById('bulkImportModal').classList.add('hidden');
+                        document.getElementById('successTitle').textContent = 'Import Berhasil!';
+
+                        let successMessage = result.message;
+                        if (result.auto_created_categories && result.auto_created_categories.length > 0) {
+                            successMessage += `<br><br><strong>Kategori yang dibuat:</strong><br>`;
+                            successMessage += result.auto_created_categories.map(cat => `• ${cat}`).join('<br>');
+                        }
+
+                        document.getElementById('successMessage').innerHTML = successMessage;
+
+                        if (result.failed_count > 0) {
+                            const failedProducts = document.getElementById('failedProducts');
+                            failedProducts.classList.remove('hidden');
+                            failedProducts.textContent = `${result.failed_count} produk gagal diimport.`;
+                        }
+
+                        document.getElementById('bulkImportSuccessModal').classList.remove('hidden');
+
+                        // Reset form
+                        this.reset();
+                        document.getElementById('providerCategoriesContainer').innerHTML = '';
+                        document.getElementById('providerCategoriesSection').classList.add('hidden');
+                        document.getElementById('manualCategorySection').classList.add('hidden');
+                        document.getElementById('autoCategoryInfo').classList.remove('hidden');
+                    } else {
+                        alert(result.message || 'Gagal mengimport produk');
+                    }
+                } catch (error) {
+                    console.error('Import error:', error);
+                    alert('Terjadi kesalahan saat mengimport produk');
+                } finally {
+                    // Reset button state
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Mulai Import';
+                    importProgress.classList.add('hidden');
                 }
             });
+
+            // Simulate progress updates
+            function simulateProgress() {
+                const progressBar = document.getElementById('progressBar');
+                const progressPercentage = document.getElementById('progressPercentage');
+                const progressText = document.getElementById('progressText');
+
+                let progress = 10;
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 95) progress = 95;
+
+                    progressBar.style.width = progress + '%';
+                    progressPercentage.textContent = Math.round(progress) + '%';
+
+                    if (progress < 30) {
+                        progressText.textContent = 'Mengambil data dari Digiflazz...';
+                    } else if (progress < 60) {
+                        progressText.textContent = 'Memproses produk...';
+                    } else if (progress < 85) {
+                        progressText.textContent = 'Menyimpan ke database...';
+                    } else {
+                        progressText.textContent = 'Menyelesaikan import...';
+                    }
+                }, 500);
+
+                return interval;
+            }
         </script>
     @endpush
 @endsection

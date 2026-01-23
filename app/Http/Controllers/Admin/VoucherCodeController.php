@@ -14,42 +14,34 @@ class VoucherCodeController extends BaseAdminController
 {
     public function index(Request $request)
     {
-        $search = $request->string('q')->toString();
-        $status = $request->string('status')->toString();
-        $productId = $request->integer('product_id');
+        $search = $request->get('q');
+        $productId = $request->get('product_id');
+        $status = $request->get('status');
 
         $voucherCodes = VoucherCode::query()
             ->with(['product', 'nominal'])
-            ->when($search, fn($q) => $q->where('code', 'like', "%{$search}%"))
-            ->when($status, fn($q) => $q->where('status', $status))
-            ->when($productId, fn($q) => $q->where('product_id', $productId))
-            ->latest()
-            ->paginate(25);
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('code', 'like', "%{$search}%")
+                        ->orWhere('secret', 'like', "%{$search}%");
+                });
+            })
+            ->when($productId, function ($query) use ($productId) {
+                $query->where('product_id', $productId);
+            })
+            ->when($status, function ($query) use ($status) {
+                $query->where('status', $status);
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(15)
+            ->withQueryString();
 
-        $products = Product::orderBy('name')->get();
-
-        $nominalsByProduct = ProductNominal::select('id', 'product_id', 'name')
+        // Tambahkan ini untuk mendapatkan produk untuk dropdown filter
+        $products = Product::where('is_active', true)
             ->orderBy('name')
-            ->get()
-            ->groupBy('product_id');
+            ->get(['id', 'name']);
 
-        // Hitung statistik
-        $stats = [
-            'available' => VoucherCode::where('status', 'available')->count(),
-            'reserved' => VoucherCode::where('status', 'reserved')->count(),
-            'sold' => VoucherCode::where('status', 'sold')->count(),
-            'expired' => VoucherCode::where('status', 'expired')->count(),
-        ];
-
-        return view('admin.voucher-codes.index', compact(
-            'voucherCodes',
-            'products',
-            'nominalsByProduct',
-            'search',
-            'status',
-            'productId',
-            'stats' // Tambahkan ini
-        ));
+        return view('admin.voucher-codes.index', compact('voucherCodes', 'products', 'search', 'productId', 'status'));
     }
 
     public function create()

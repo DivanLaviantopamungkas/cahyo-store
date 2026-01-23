@@ -18,8 +18,7 @@ class HomeController extends Controller
             ->orderBy('order')
             ->with(['products' => function ($query) {
                 $query->where('is_active', 1)
-                    ->orderBy('order')
-                    ->limit(8);
+                    ->orderBy('order');
             }])
             ->get();
 

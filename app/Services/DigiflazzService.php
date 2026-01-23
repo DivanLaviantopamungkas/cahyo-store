@@ -137,6 +137,23 @@ class DigiflazzService
                     ($product['status'] ?? 1) == 1;
 
                 try {
+                    // Extract image URL if available
+                    $details = $product;
+
+                    // Check if there's icon URL in the data
+                    if (isset($product['icon_url'])) {
+                        $details['image_url'] = $product['icon_url'];
+                    } elseif (isset($product['icon'])) {
+                        $details['image_url'] = $product['icon'];
+                    } elseif (isset($product['images']) && is_array($product['images']) && !empty($product['images'])) {
+                        $details['image_url'] = $product['images'][0];
+                    }
+
+                    // Extract description if available
+                    $description = $product['description'] ??
+                        $product['desc'] ??
+                        "Produk {$name} kategori {$category}";
+
                     ProviderProduct::updateOrCreate(
                         [
                             'provider_id' => $this->provider->id,
@@ -147,12 +164,17 @@ class DigiflazzService
                             'category' => $category,
                             'brand' => $brand,
                             'provider_price' => $price,
+                            'description' => $description,
                             'is_available' => $isAvailable,
-                            'details' => json_encode($product),
+                            'details' => json_encode($details),
                             'last_sync_at' => now(),
                         ]
                     );
                     $count++;
+
+                    Log::info("Synced product: {$name} - {$sku}", [
+                        'has_image' => isset($details['image_url']) ? 'Yes' : 'No'
+                    ]);
                 } catch (\Exception $e) {
                     Log::error('Error saving product', [
                         'sku' => $sku,

@@ -47,7 +47,17 @@ class ProductController extends BaseAdminController
 
         $categories = Category::orderBy('order')->get();
 
-        return $this->view('products.index', compact('products', 'categories', 'search', 'categoryId', 'status'));
+        // Tambahkan ini untuk mendapatkan semua produk (untuk filter jika diperlukan)
+        $allProducts = Product::orderBy('name')->get(['id', 'name']);
+
+        return $this->view('products.index', compact(
+            'products',
+            'categories',
+            'allProducts', // Tambahkan ini
+            'search',
+            'categoryId',
+            'status'
+        ));
     }
 
     /**
@@ -559,7 +569,7 @@ class ProductController extends BaseAdminController
         $product->load(['product_nominals' => function ($query) {
             $query->orderBy('order')
                 ->orderBy('name')
-                ->withCount(['voucherCodes as real_stock' => function($q) {
+                ->withCount(['voucherCodes as real_stock' => function ($q) {
                     $q->where('status', 'available');
                 }]);
         }]);
@@ -909,5 +919,447 @@ class ProductController extends BaseAdminController
         }
 
         return null;
+    }
+
+    /**
+     * Import all products from Digiflazz provider
+     */
+    public function importAllDigiflazz(Request $request)
+    {
+        $request->validate([
+            'provider_id' => 'required|exists:providers,id',
+            'margin' => 'required|numeric|min:0|max:100',
+            'type' => 'required|in:single,multiple',
+            'auto_create_category' => 'nullable|boolean', // Optional flag
+        ]);
+
+        try {
+            $provider = Provider::findOrFail($request->provider_id);
+
+            // Check if provider is Digiflazz
+            if ($provider->code !== 'digiflazz') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Hanya provider Digiflazz yang didukung'
+                ], 400);
+            }
+
+            // Get selected categories if any
+            $selectedCategories = [];
+            if ($request->has('selected_categories')) {
+                $selectedCategories = json_decode($request->selected_categories, true) ?? [];
+            }
+
+            // Query products
+            $productsQuery = ProviderProduct::where('provider_id', $provider->id)
+                ->where('is_available', true);
+
+            // Filter by selected categories if provided
+            if (!empty($selectedCategories)) {
+                $productsQuery->whereIn('category', $selectedCategories);
+            }
+
+            $products = $productsQuery->orderBy('brand')
+                ->orderBy('provider_price')
+                ->get();
+
+            if ($products->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada produk tersedia di provider ini. Silakan sinkronisasi terlebih dahulu.'
+                ], 400);
+            }
+
+            $importedCount = 0;
+            $failedCount = 0;
+            $failedProducts = [];
+            $margin = floatval($request->margin);
+
+            // Auto create categories tracking
+            $autoCreatedCategories = [];
+            $categoryOrder = 999; // Order untuk kategori baru
+
+            DB::beginTransaction();
+
+            if ($request->type === 'single') {
+                // Import each product as single product
+                foreach ($products as $product) {
+                    try {
+                        // Check if product already exists
+                        $existingProduct = Product::where('provider_sku', $product->provider_sku)
+                            ->where('provider_id', $provider->id)
+                            ->first();
+
+                        if ($existingProduct) {
+                            $failedProducts[] = "{$product->name} - Sudah ada";
+                            $failedCount++;
+                            continue;
+                        }
+
+                        // Auto-create or find category
+                        $category = null;
+                        if ($request->auto_create_category && $product->category) {
+                            $category = Category::findOrCreate(
+                                $product->category,
+                                $categoryOrder--
+                            );
+                            $autoCreatedCategories[$product->category] = true;
+                        } else {
+                            // Gunakan kategori yang dipilih atau default
+                            if ($request->category_id) {
+                                $category = Category::find($request->category_id);
+                            }
+                            if (!$category) {
+                                $category = Category::findOrCreate('Digital Products', 0);
+                            }
+                        }
+
+                        if (!$category) {
+                            throw new \Exception('Kategori tidak ditemukan');
+                        }
+
+                        // Parse details for image URL
+                        $details = [];
+                        $imageUrl = null;
+                        if ($product->details && is_string($product->details)) {
+                            try {
+                                $details = json_decode($product->details, true, 512, JSON_THROW_ON_ERROR);
+                                // Get image URL from Digiflazz details
+                                $imageUrl = $details['icon_url'] ??
+                                    ($details['images'][0] ??
+                                        ($details['icon'] ??
+                                            ($details['image'] ?? null)));
+                            } catch (\Exception $e) {
+                                $details = [];
+                            }
+                        }
+
+                        // Download image from Digiflazz
+                        $imagePath = null;
+                        if ($imageUrl) {
+                            $imagePath = $this->downloadDigiflazzImage($imageUrl, $product->name);
+                        }
+
+                        // Generate unique slug
+                        $baseSlug = Str::slug($product->name);
+                        $slug = $baseSlug;
+                        $counter = 1;
+                        while (Product::where('slug', $slug)->exists()) {
+                            $slug = $baseSlug . '-' . $counter;
+                            $counter++;
+                        }
+
+                        // Calculate selling price
+                        $costPrice = floatval($product->provider_price);
+                        if ($margin >= 100) {
+                            throw new \Exception('Margin tidak boleh 100% atau lebih');
+                        }
+
+                        if ($costPrice > 0 && $margin > 0) {
+                            $sellingPrice = $costPrice / (1 - ($margin / 100));
+                            $finalPrice = ceil($sellingPrice / 100) * 100;
+                        } else {
+                            $finalPrice = $costPrice;
+                        }
+
+                        // Create product
+                        $newProduct = Product::create([
+                            'category_id' => $category->id,
+                            'name' => $product->name,
+                            'slug' => $slug,
+                            'description' => $product->description ?: ($details['description'] ?? "Produk {$product->name}"),
+                            'type' => 'single',
+                            'image' => $imagePath,
+                            'provider_id' => $provider->id,
+                            'provider_sku' => $product->provider_sku,
+                            'source' => 'digiflazz',
+                            'is_active' => true,
+                            'is_featured' => false,
+                            'order' => 0,
+                            'meta_data' => $product->details ? json_encode($product->details) : null,
+                        ]);
+
+                        // Create single nominal
+                        ProductNominal::create([
+                            'product_id' => $newProduct->id,
+                            'name' => $product->name,
+                            'provider_sku' => $product->provider_sku,
+                            'price' => $finalPrice,
+                            'cost_price' => $costPrice,
+                            'margin' => $margin,
+                            'discount_price' => null,
+                            'stock' => 0, // Atau null
+                            'available_stock' => null, // NULL untuk provider!
+                            'stock_mode' => 'provider', // Pastikan ini 'provider'
+                            'is_active' => true,
+                            'order' => 0,
+                            'meta_data' => $product->details ? json_encode($product->details) : null,
+                        ]);
+
+                        $importedCount++;
+                        Log::info("Imported product: {$product->name}, Category: {$category->name}");
+                    } catch (\Exception $e) {
+                        $failedProducts[] = "{$product->name} - " . substr($e->getMessage(), 0, 50);
+                        $failedCount++;
+                        Log::error("Failed to import product {$product->name}: " . $e->getMessage());
+                    }
+                }
+            } else {
+                // Import grouped by brand/category
+                $groupedProducts = [];
+
+                // Group products by brand and category
+                foreach ($products as $product) {
+                    $key = ($product->brand ?: 'default') . '|' . ($product->category ?: 'uncategorized');
+                    if (!isset($groupedProducts[$key])) {
+                        $groupedProducts[$key] = [];
+                    }
+                    $groupedProducts[$key][] = $product;
+                }
+
+                foreach ($groupedProducts as $key => $brandProducts) {
+                    try {
+                        list($brand, $categoryName) = explode('|', $key);
+
+                        // Use first product as base
+                        $baseProduct = $brandProducts[0];
+
+                        // Auto-create or find category
+                        $category = null;
+                        if ($request->auto_create_category && $categoryName && $categoryName !== 'uncategorized') {
+                            $category = Category::findOrCreate(
+                                $categoryName,
+                                $categoryOrder--
+                            );
+                            $autoCreatedCategories[$categoryName] = true;
+                        } else {
+                            // Gunakan kategori yang dipilih atau default
+                            if ($request->category_id) {
+                                $category = Category::find($request->category_id);
+                            }
+                            if (!$category) {
+                                $category = Category::findOrCreate('Digital Products', 0);
+                            }
+                        }
+
+                        if (!$category) {
+                            throw new \Exception('Kategori tidak ditemukan');
+                        }
+
+                        // Generate product name
+                        $productName = $brand !== 'default' ? $brand : $baseProduct->name;
+                        if ($brand === 'default') {
+                            // Try to extract brand from product name
+                            if (preg_match('/(pulsa|data|paket|token)/i', $baseProduct->name)) {
+                                $productName = $categoryName !== 'uncategorized' ? $categoryName : 'Produk Digital';
+                            }
+                        }
+
+                        // Generate unique product name
+                        $productName = trim($productName);
+                        if (empty($productName)) {
+                            $productName = 'Produk ' . $categoryName;
+                        }
+
+                        // Check if product already exists (by similar name)
+                        $existingProduct = Product::where('name', 'like', "%{$productName}%")
+                            ->where('provider_id', $provider->id)
+                            ->where('category_id', $category->id)
+                            ->first();
+
+                        if ($existingProduct) {
+                            $failedProducts[] = "{$productName} - Sudah ada";
+                            $failedCount++;
+                            continue;
+                        }
+
+                        // Get image from first product
+                        $imagePath = null;
+                        $details = [];
+                        if ($baseProduct->details && is_string($baseProduct->details)) {
+                            try {
+                                $details = json_decode($baseProduct->details, true, 512, JSON_THROW_ON_ERROR);
+                                $imageUrl = $details['icon_url'] ??
+                                    ($details['images'][0] ??
+                                        ($details['icon'] ??
+                                            ($details['image'] ?? null)));
+                                if ($imageUrl) {
+                                    $imagePath = $this->downloadDigiflazzImage($imageUrl, $productName);
+                                }
+                            } catch (\Exception $e) {
+                                $details = [];
+                            }
+                        }
+
+                        // Generate unique slug
+                        $baseSlug = Str::slug($productName);
+                        $slug = $baseSlug;
+                        $counter = 1;
+                        while (Product::where('slug', $slug)->exists()) {
+                            $slug = $baseSlug . '-' . $counter;
+                            $counter++;
+                        }
+
+                        // Create product
+                        $newProduct = Product::create([
+                            'category_id' => $category->id,
+                            'name' => $productName,
+                            'slug' => $slug,
+                            'description' => "Berbagai pilihan nominal {$productName}",
+                            'type' => 'multiple',
+                            'image' => $imagePath,
+                            'provider_id' => $provider->id,
+                            'provider_sku' => 'MULTIPLE-' . Str::slug($productName),
+                            'source' => 'digiflazz',
+                            'is_active' => true,
+                            'is_featured' => false,
+                            'order' => 0,
+                            'meta_data' => null,
+                        ]);
+
+                        // Create multiple nominals
+                        foreach ($brandProducts as $index => $product) {
+                            $costPrice = floatval($product->provider_price);
+
+                            if ($costPrice > 0 && $margin > 0) {
+                                $sellingPrice = $costPrice / (1 - ($margin / 100));
+                                $finalPrice = ceil($sellingPrice / 100) * 100;
+                            } else {
+                                $finalPrice = $costPrice;
+                            }
+
+                            ProductNominal::create([
+                                'product_id' => $newProduct->id,
+                                'name' => $product->name,
+                                'provider_sku' => $product->provider_sku,
+                                'price' => $finalPrice,
+                                'cost_price' => $costPrice,
+                                'margin' => $margin,
+                                'discount_price' => null,
+                                'stock' => 0, // Atau null
+                                'available_stock' => null, // NULL untuk provider!
+                                'stock_mode' => 'provider', // Pastikan ini 'provider'
+                                'is_active' => true,
+                                'order' => 0,
+                                'meta_data' => $product->details ? json_encode($product->details) : null,
+                            ]);
+                        }
+
+                        $importedCount++;
+                        Log::info("Imported grouped product: {$productName}, Category: {$category->name}");
+                    } catch (\Exception $e) {
+                        $failedProducts[] = "{$key} - " . substr($e->getMessage(), 0, 50);
+                        $failedCount++;
+                        Log::error("Failed to import grouped products for {$key}: " . $e->getMessage());
+                    }
+                }
+            }
+
+            DB::commit();
+
+            $message = "Berhasil mengimport {$importedCount} produk" .
+                ($failedCount > 0 ? " ({$failedCount} gagal)" : "");
+
+            // Tambahkan informasi kategori yang dibuat otomatis
+            if (!empty($autoCreatedCategories)) {
+                $message .= ". Kategori yang dibuat otomatis: " . implode(', ', array_keys($autoCreatedCategories));
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'imported_count' => $importedCount,
+                'failed_count' => $failedCount,
+                'auto_created_categories' => array_keys($autoCreatedCategories),
+                'failed_products' => array_slice($failedProducts, 0, 10), // Limit to 10
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Import all Digiflazz products failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengimport produk: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function downloadDigiflazzImage($imageUrl, $productName): ?string
+    {
+        try {
+            if (empty($imageUrl)) {
+                return null;
+            }
+
+            // Generate filename
+            $filename = time() . '_' . Str::slug($productName) . '.png';
+            $path = 'storage/images/products';
+
+            // Create directory if not exists
+            if (!file_exists(public_path('images/products'))) {
+                mkdir(public_path('images/products'), 0777, true);
+            }
+
+            // Download image using cURL or file_get_contents
+            $imageData = @file_get_contents($imageUrl);
+
+            if ($imageData === false) {
+                // Try with cURL if file_get_contents fails
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $imageUrl);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+                curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+                curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0');
+                $imageData = curl_exec($ch);
+                curl_close($ch);
+            }
+
+            if ($imageData === false) {
+                Log::warning("Failed to download image from URL: {$imageUrl}");
+                return null;
+            }
+
+            // Save image
+            $fullPath = "{$path}/{$filename}";
+            $savePath = public_path("images/products/{$filename}");
+
+            if (file_put_contents($savePath, $imageData)) {
+                return "images/products/{$filename}";
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Image download error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get categories from provider products
+     */
+    public function getProviderCategories(Provider $provider)
+    {
+        try {
+            $categories = ProviderProduct::where('provider_id', $provider->id)
+                ->whereNotNull('category')
+                ->select('category')
+                ->distinct()
+                ->orderBy('category')
+                ->pluck('category')
+                ->map(function ($category) {
+                    return [
+                        'value' => $category,
+                        'label' => ucfirst($category),
+                    ];
+                })
+                ->values()
+                ->toArray();
+
+            return response()->json($categories);
+        } catch (\Exception $e) {
+            Log::error('Error loading provider categories: ' . $e->getMessage());
+            return response()->json([], 500);
+        }
     }
 }

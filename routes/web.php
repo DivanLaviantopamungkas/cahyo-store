@@ -37,12 +37,49 @@ use App\Http\Controllers\Customer\ProductController as CustomerGuiProductControl
 use App\Http\Controllers\Customer\CategoryController as CustomerGuiCategoryController;
 use App\Http\Controllers\Customer\UserController;
 use App\Http\Middleware\CheckCheckoutAccess;
+use Illuminate\Support\Facades\Http;
 
 /*
 |--------------------------------------------------------------------------
 | Public (tanpa login)
 |--------------------------------------------------------------------------
 */
+
+// Route::get('/test-telegram-notif', function () {
+//     // Cari transaksi terbaru yang sukses
+//     $transaction = \App\Models\Trancsaction::with(['items.product', 'items.nominal', 'user'])
+//         ->where('status', 'completed')
+//         ->latest()
+//         ->first();
+
+//     if (!$transaction) {
+//         return 'No completed transaction found';
+//     }
+
+//     $service = new \App\Services\TelegramService();
+
+//     // Test 1: Simple message
+//     $result1 = $service->sendMessage('🤖 *Test Notification*' . "\n" . now()->format('Y-m-d H:i:s'));
+
+//     // Test 2: Transaction notification
+//     $result2 = $service->sendNewTransaction($transaction);
+
+//     return response()->json([
+//         'transaction' => [
+//             'id' => $transaction->id,
+//             'invoice' => $transaction->invoice,
+//             'items_count' => $transaction->items->count(),
+//         ],
+//         'telegram_tests' => [
+//             'simple_message' => $result1 ? 'SUCCESS' : 'FAILED',
+//             'transaction_notif' => $result2 ? 'SUCCESS' : 'FAILED',
+//         ],
+//         'config' => [
+//             'bot_token_exists' => !empty(config('services.telegram.bot_token')),
+//             'chat_id_exists' => !empty(config('services.telegram.admin_chat_id')),
+//         ]
+//     ]);
+// });
 
 // ==================== PUBLIC ROUTES ====================
 // Halaman Utama (Bisa diakses tanpa login)
@@ -108,15 +145,15 @@ Route::post('/payment/webhook/test', [PaymentWebhookController::class, 'testWebh
 Route::get('/checkout/handle-midtrans-return', [CheckoutController::class, 'handleMidtransReturn'])
     ->name('checkout.handle.midtrans.return');
 
-Route::get('/checkout/{product_slug}', [CheckoutController::class, 'create'])
-    ->middleware([CheckCheckoutAccess::class])
-    ->name('checkout.create');
+// Route::get('/checkout/{product_slug}', [CheckoutController::class, 'create'])
+//     ->middleware([CheckCheckoutAccess::class])
+//     ->name('checkout.create');
 
 // Logout
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [UserController::class, 'logout'])->name('logout');
 
-    // Route::get('/checkout/{product_slug}', [CheckoutController::class, 'create'])->name('checkout.create');
+    Route::get('/checkout/create/{product_slug}', [CheckoutController::class, 'create'])->name('checkout.create');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
     Route::get('/checkout/payment/{order_id}', [CheckoutController::class, 'payment'])->name('checkout.payment');
     Route::get('/checkout/success/{order_id}', [CheckoutController::class, 'success'])->name('checkout.success');
@@ -128,6 +165,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/', [OrderController::class, 'index'])->name('index');
         Route::get('/{order_id}', [OrderController::class, 'show'])->name('show');
         Route::get('/{order_id}/invoice', [OrderController::class, 'invoice'])->name('invoice');
+        Route::get('/{order_id}/invoice/download', [OrderController::class, 'downloadInvoice'])->name('invoice.download');
         Route::post('/{order_id}/reorder', [OrderController::class, 'reorder'])->name('reorder');
     });
 
@@ -189,6 +227,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::post('/store/manual', [ProductController::class, 'storeManual'])->name('store.manual');
 
         // Digiflazz Product Routes
+        Route::post('/products/import-all-digiflazz', [ProductController::class, 'importAllDigiflazz'])
+            ->name('products.import-all-digiflazz');
+        Route::get('/products/providers/{provider}/categories', [ProductController::class, 'getProviderCategories'])
+            ->name('products.provider-categories');
         Route::get('/create/digiflazz', [ProductController::class, 'createDigiflazz'])->name('create.digiflazz');
         Route::post('/store/digiflazz', [ProductController::class, 'storeDigiflazz'])->name('store.digiflazz');
 
