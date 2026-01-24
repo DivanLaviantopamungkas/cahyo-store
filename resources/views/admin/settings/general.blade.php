@@ -96,8 +96,4 @@
         </form>
     </x-admin.card>
 </div>
-
-@if(session('toast'))
-    @include('components.admin.toast')
-@endif
 @endsection
