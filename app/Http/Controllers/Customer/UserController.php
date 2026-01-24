@@ -152,6 +152,87 @@ class UserController extends Controller
             ->with('success', 'Pendaftaran berhasil! Selamat datang ' . $user->name);
     }
 
+    // Claude
+    public function profile()
+    {
+        return view('customer.pages.profile');
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        // Format whatsapp
+        $whatsapp = preg_replace('/[^0-9]/', '', $request->whatsapp);
+
+        // Validation
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:100',
+            'whatsapp' => 'required|string|regex:/^[0-9]{10,15}$/|unique:users,whatsapp,' . $user->id,
+            'email' => 'nullable|email|max:100|unique:users,email,' . $user->id,
+        ], [
+            'name.required' => 'Nama lengkap wajib diisi',
+            'name.max' => 'Nama maksimal 100 karakter',
+            'whatsapp.required' => 'Nomor WhatsApp wajib diisi',
+            'whatsapp.regex' => 'Format nomor WhatsApp tidak valid (10-15 digit angka)',
+            'whatsapp.unique' => 'Nomor WhatsApp sudah digunakan',
+            'email.email' => 'Format email tidak valid',
+            'email.unique' => 'Email sudah digunakan',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->with('error', 'Gagal memperbarui profile');
+        }
+
+        // Update user
+        $user->update([
+            'name' => $request->name,
+            'whatsapp' => $whatsapp,
+            'email' => $request->email,
+        ]);
+
+        return redirect()->route('user.index')
+            ->with('success', 'Profile berhasil diperbarui');
+    }
+
+    public function changePassword(Request $request)
+    {
+        $user = Auth::user();
+
+        // Validation
+        $validator = Validator::make($request->all(), [
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:6|confirmed',
+        ], [
+            'current_password.required' => 'Password lama wajib diisi',
+            'new_password.required' => 'Password baru wajib diisi',
+            'new_password.min' => 'Password baru minimal 6 karakter',
+            'new_password.confirmed' => 'Konfirmasi password tidak cocok',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->with('error', 'Gagal mengubah password');
+        }
+
+        // Check current password
+        if (!Hash::check($request->current_password, $user->password)) {
+            return redirect()->back()
+                ->with('error', 'Password lama tidak sesuai');
+        }
+
+        // Update password
+        $user->update([
+            'password' => Hash::make($request->new_password),
+        ]);
+
+        return redirect()->route('user.index')
+            ->with('success', 'Password berhasil diubah');
+    }
+
     /**
      * Handle logout (WEB)
      */
