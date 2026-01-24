@@ -49,8 +49,6 @@ class TelegramService
         $message .= "Total: Rp " . number_format($transaction->amount, 0, ',', '.') . "\n";
         $message .= "Status: {$transaction->status}\n\n";
 
-        $message .= "💰 <a href='" . route('admin.transactions.show', $transaction->id) . "'>LIHAT DETAIL</a>";
-
         $this->sendMessage($message);
     }
 }
