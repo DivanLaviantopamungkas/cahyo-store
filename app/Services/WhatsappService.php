@@ -2,12 +2,10 @@
 
 namespace App\Services;
 
-use Endroid\QrCode\QrCode;
-use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use CURLFile;
-use Endroid\QrCode\Encoding\Encoding;
+use Picqer\Barcode\BarcodeGeneratorPNG;
+use Intervention\Image\Facades\Image;
 
 class WhatsAppService
 {
@@ -18,222 +16,161 @@ class WhatsAppService
         $this->deviceId = config('services.whacenter.device_id');
     }
 
-    public function sendMessage($phone, $message)
-    {
-        $phone = $this->formatPhone($phone);
-        $url = "https://app.whacenter.com/api/send?device_id={$this->deviceId}&number={$phone}&message=" . urlencode($message);
-
-        $response = Http::timeout(30)->get($url);
-        $data = $response->json();
-
-        Log::info('Whacenter response', ['response' => $data]);
-        return $response->successful();
-    }
-
-    /** ✅ GENERATE QR CODE */
-    private function generateQrImage($voucherCode, $invoice)
-    {
-        $qrData = "VOUCHER:{$voucherCode}|{$invoice}";
-
-        try {
-            // ✅ endroid/qr-code v4.8.2 SYNTAX
-            $qrCode = new QrCode($qrData);
-            $qrCode->setSize(300);
-            $qrCode->setMargin(10);
-            $qrCode->setEncoding(new Encoding('UTF-8'));
-
-            $writer = new PngWriter();
-            $result = $writer->write($qrCode);
-
-            $imagePath = storage_path("app/public/qr-{$invoice}.png");
-
-            // Buat folder
-            $dir = dirname($imagePath);
-            if (!file_exists($dir)) {
-                mkdir($dir, 0777, true);
-            }
-
-            $result->saveToFile($imagePath);
-
-            if (file_exists($imagePath) && filesize($imagePath) > 100) {
-                Log::info('✅ QR Generated OK', [
-                    'path' => $imagePath,
-                    'size' => filesize($imagePath)
-                ]);
-                return $imagePath;
-            }
-
-            Log::error('❌ QR Generate FAILED', ['path' => $imagePath]);
-            return null;
-        } catch (\Exception $e) {
-            Log::error('QR Generation Error', ['error' => $e->getMessage()]);
-            return null;
-        }
-    }
-
-    /** ✅ UPLOAD ke Imgur */
-    private function uploadToImgur($imagePath)
-    {
-        try {
-            $curl = curl_init();
-            curl_setopt_array($curl, [
-                CURLOPT_URL => 'https://api.imgur.com/3/image',
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => ['image' => new CURLFile($imagePath)],
-                CURLOPT_HTTPHEADER => ['Authorization: Client-ID 8e0ccdd13e4dffd'],
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 30
-            ]);
-
-            $response = curl_exec($curl);
-            $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-            curl_close($curl);
-
-            $data = json_decode($response, true);
-            $imgurUrl = $data['data']['link'] ?? null;
-
-            Log::info('Imgur upload', [
-                'http_code' => $httpCode,
-                'url' => $imgurUrl,
-                'response' => $data ?? 'no json'
-            ]);
-
-            // Hapus file lokal setelah upload
-            if (file_exists($imagePath)) {
-                unlink($imagePath);
-            }
-
-            return $imgurUrl;
-        } catch (\Exception $e) {
-            Log::error('Imgur Upload Error', ['error' => $e->getMessage()]);
-            return null;
-        }
-    }
-
-    /** ✅ KIRIM GAMBAR via Whacenter */
-    public function sendQrImage($phone, $voucherCode, $invoice)
+    /* ================= SEND TEXT ================= */
+    public function sendMessage(string $phone, string $message): bool
     {
         $phone = $this->formatPhone($phone);
 
-        // 1. Generate QR Code
-        $qrImagePath = $this->generateQrImage($voucherCode, $invoice);
+        $response = Http::timeout(30)->get('https://app.whacenter.com/api/send', [
+            'device_id' => $this->deviceId,
+            'number'    => $phone,
+            'message'   => $message,
+        ]);
 
-        if (!$qrImagePath) {
-            Log::error('❌ QR Generation failed, using fallback');
-            return $this->sendQrFallback($phone, $voucherCode, $invoice);
-        }
-
-        // 2. Upload ke Imgur untuk mendapatkan URL gambar
-        $imgurUrl = $this->uploadToImgur($qrImagePath);
-
-        if (!$imgurUrl) {
-            Log::error('❌ Imgur upload failed, using fallback');
-            return $this->sendQrFallback($phone, $voucherCode, $invoice);
-        }
-
-        // 3. Kirim gambar via Whacenter API
-        $caption = "🖼️ *QR VOUCHER ANDA*\n\n" .
-            "━━━━━━━━━━━━━━━━━━━━━\n" .
-            "🎫 **Voucher:** {$voucherCode}\n" .
-            "📄 **Invoice:** {$invoice}\n" .
-            "━━━━━━━━━━━━━━━━━━━━━\n\n" .
-            "📱 **CARA SCAN:**\n" .
-            "• Buka kamera HP\n" .
-            "• Arahkan ke kode QR\n" .
-            "• Tunggu hingga terdeteksi\n\n" .
-            "✅ Klaim otomatis!";
-
-        // Kirim gambar via Whacenter
-        $url = "https://app.whacenter.com/api/send?device_id={$this->deviceId}&number={$phone}&message=" .
-            urlencode($caption) . "&image=" . urlencode($imgurUrl);
-
-        $response = Http::timeout(30)->get($url);
-        $data = $response->json();
-
-        Log::info('Whacenter Image Send', ['response' => $data]);
+        Log::info('Whacenter Text', ['response' => $response->json()]);
 
         return $response->successful();
     }
 
-    /** ✅ FALLBACK jika upload gambar gagal */
-    private function sendQrFallback($phone, $voucherCode, $invoice)
-    {
-        // Generate QR Code URL dari layanan eksternal
-        $qrData = "VOUCHER:{$voucherCode}|{$invoice}";
-        $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . urlencode($qrData);
+    /* ================= GENERATE BARCODE IMAGE ================= */
+    private function generateRetailBarcodeImage(
+        string $productName,
+        string $nominalName,
+        int $nominalPrice,
+        string $voucherCode,
+        string $invoice
+    ): ?string {
+        try {
+            // BARCODE
+            $generator = new BarcodeGeneratorPNG();
+            $barcodeBinary = $generator->getBarcode(
+                $voucherCode,
+                $generator::TYPE_CODE_128,
+                3,
+                120
+            );
 
-        $message = "📱 *QR VOUCHER ANDA*\n\n" .
-            "Karena ada kendala teknis, silakan scan QR code melalui link berikut:\n" .
-            $qrUrl . "\n\n" .
-            "🎫 **Voucher:** {$voucherCode}\n" .
-            "📄 **Invoice:** {$invoice}";
+            $barcode = Image::make($barcodeBinary);
 
-        return $this->sendMessage($phone, $message);
+            // CANVAS
+            $canvas = Image::canvas(600, 420, '#ffffff');
+
+            // HEADER
+            $canvas->text(strtoupper($productName), 300, 40, function ($font) {
+                $font->file(storage_path('fonts/Roboto-Bold.ttf'));
+                $font->size(28);
+                $font->align('center');
+                $font->color('#000000');
+            });
+
+            // NOMINAL
+            $canvas->text(
+                strtoupper($nominalName) . ' Rp' . number_format($nominalPrice, 0, ',', '.'),
+                300,
+                85,
+                function ($font) {
+                    $font->file(storage_path('fonts/Roboto-Regular.ttf'));
+                    $font->size(18);
+                    $font->align('center');
+                    $font->color('#000000');
+                }
+            );
+
+            // BARCODE
+            $canvas->insert($barcode, 'center', 0, -10);
+
+            // CODE
+            $canvas->text($voucherCode, 300, 290, function ($font) {
+                $font->file(storage_path('fonts/Roboto-Bold.ttf'));
+                $font->size(20);
+                $font->align('center');
+                $font->color('#000000');
+            });
+
+            // FOOTER
+            $canvas->text("Invoice: {$invoice}", 300, 340, function ($font) {
+                $font->file(storage_path('fonts/Roboto-Regular.ttf'));
+                $font->size(14);
+                $font->align('center');
+                $font->color('#666666');
+            });
+
+            $path = storage_path("app/public/barcode-{$invoice}.png");
+            $canvas->save($path, 100);
+
+            Log::info('BARCODE IMAGE GENERATED', [
+                'path'   => $path,
+                'exists' => file_exists($path),
+                'size'  => file_exists($path) ? filesize($path) : 0
+            ]);
+
+            return file_exists($path)
+                ? asset("storage/barcode-{$invoice}.png")
+                : null;
+        } catch (\Exception $e) {
+            Log::error('Barcode Generate Error', ['error' => $e->getMessage()]);
+            return null;
+        }
     }
 
-    /** ✅ KIRIM SEMUA PESAN (Voucher + QR + Info) */
-    public function sendPaymentSuccess($transaction)
+    /* ================= SEND PAYMENT SUCCESS ================= */
+    public function sendPaymentSuccess($transaction): bool
     {
         $transaction->load(['items.product', 'items.nominal', 'user']);
-        $transactionItem = $transaction->items->first();
+        $item = $transaction->items->first();
 
-        if (!$transactionItem) {
-            Log::error('❌ NO TRANSACTION ITEM');
+        if (!$item || !$item->voucher_code) {
+            Log::error('❌ Voucher code missing');
             return false;
         }
 
-        $phone = $transaction->user->whatsapp ?? '6281226594919';
+        $phone = $transaction->user->whatsapp;
 
-        if (!$transactionItem->voucher_code) {
-            Log::error('❌ NO VOUCHER CODE');
-            return false;
-        }
+        // 1️⃣ SEND TEXT
+        $this->sendMessage(
+            $phone,
+            "🎫 *VOUCHER ANDA*\n\n" .
+                "Produk : {$item->product->name}\n" .
+                "Nominal: {$item->nominal->name}\n" .
+                "Kode   : `{$item->voucher_code}`\n" .
+                "Invoice: {$transaction->invoice}\n\n" .
+                "Simpan kode ini"
+        );
 
-        try {
-            // 1. Kirim pesan voucher code
-            $message1 = "🎫 *KODE VOUCHER ANDA*\n\n" .
-                "━━━━━━━━━━━━━━━━━━━━━\n" .
-                "📄 **Invoice:** {$transaction->invoice}\n" .
-                "📦 **Produk:** {$transactionItem->product->name}\n" .
-                "🎫 **Kode:** `{$transactionItem->voucher_code}`\n" .
-                "━━━━━━━━━━━━━━━━━━━━━\n\n" .
-                "💡 Simpan kode ini untuk klaim";
+        sleep(2);
 
-            $this->sendMessage($phone, $message1);
-            sleep(2);
+        // 2️⃣ GENERATE BARCODE
+        $imageUrl = $this->generateRetailBarcodeImage(
+            $item->product->name,
+            $item->nominal->name,
+            $item->nominal->price,
+            $item->voucher_code,
+            $transaction->invoice
+        );
 
-            // 2. Kirim QR Code sebagai gambar
-            $qrSent = $this->sendQrImage($phone, $transactionItem->voucher_code, $transaction->invoice);
-            Log::info('QR Send Status', ['sent' => $qrSent]);
-            sleep(2);
-
-            // 3. Kirim pesan expired
-            $expiredDate = $transactionItem->expired_at?->format('d M Y') ?? now()->addDays(30)->format('d M Y');
-            $message3 = "🎉 *TERIMA KASIH*\n\n" .
-                "✅ Transaksi Anda berhasil\n" .
-                "📄 Invoice: {$transaction->invoice}\n" .
-                "⏰ Berlaku hingga: {$expiredDate}\n\n" .
-                "📞 **Customer Service:**\n" .
-                "6281226594919";
-
-            $this->sendMessage($phone, $message3);
-
-            Log::info('✅ 3 WhatsApp messages sent', [
-                'invoice' => $transaction->invoice,
-                'phone' => $phone
-            ]);
+        if (!$imageUrl) {
+            Log::error('❌ Failed generate barcode image');
             return true;
-        } catch (\Exception $e) {
-            Log::error('Error sending WhatsApp', [
-                'error' => $e->getMessage(),
-                'invoice' => $transaction->invoice
-            ]);
-            return false;
         }
+
+        // 3️⃣ SEND IMAGE WA (DIRECT URL)
+        $response = Http::timeout(30)->get('https://app.whacenter.com/api/send', [
+            'device_id' => $this->deviceId,
+            'number'    => $this->formatPhone($phone),
+            'image'     => $imageUrl,
+            'message'   => '*TUNJUKKAN BARCODE INI KE KASIR*'
+        ]);
+
+        Log::info('Whacenter Image', [
+            'image'    => $imageUrl,
+            'response' => $response->json()
+        ]);
+
+        return true;
     }
 
-    /** ✅ FORMAT NOMOR TELEPON */
-    private function formatPhone($phone)
+    /* ================= FORMAT PHONE ================= */
+    private function formatPhone(string $phone): string
     {
         $phone = preg_replace('/[^0-9]/', '', $phone);
 

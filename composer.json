@@ -9,11 +9,13 @@
         "barryvdh/laravel-dompdf": "^2.2",
         "endroid/qr-code": "^4.8",
         "guzzlehttp/guzzle": "^7.2",
+        "intervention/image": "^2.7",
         "laravel/framework": "^9.19",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.7",
         "midtrans/midtrans-php": "^2.6",
         "netflie/whatsapp-cloud-api": "^2.2",
+        "picqer/php-barcode-generator": "^2.4",
         "simplesoftwareio/simple-qrcode": "^4.2",
         "telegram-bot/api": "^2.5"
     },
