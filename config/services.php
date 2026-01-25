@@ -44,10 +44,8 @@ return [
         'timeout'  => env('DIGIFLAZZ_TIMEOUT', 25),
     ],
 
-    'whatsapp' => [
-        'base_url' => env('WHATSAPP_BASE_URL'),
-        'token'    => env('WHATSAPP_TOKEN'),
-        'timeout'  => env('WHATSAPP_TIMEOUT', 25),
+    'whacenter' => [
+    'device_id' => env('WHACENTER_DEVICE_ID'),
     ],
 
     'telegram' => [

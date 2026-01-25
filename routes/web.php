@@ -37,50 +37,15 @@ use App\Http\Controllers\Customer\ProductController as CustomerGuiProductControl
 use App\Http\Controllers\Customer\CategoryController as CustomerGuiCategoryController;
 use App\Http\Controllers\Customer\UserController;
 use App\Http\Middleware\CheckCheckoutAccess;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 /*
 |--------------------------------------------------------------------------
 | Public (tanpa login)
 |--------------------------------------------------------------------------
 */
-
-// Route::get('/test-telegram-notif', function () {
-//     // Cari transaksi terbaru yang sukses
-//     $transaction = \App\Models\Trancsaction::with(['items.product', 'items.nominal', 'user'])
-//         ->where('status', 'completed')
-//         ->latest()
-//         ->first();
-
-//     if (!$transaction) {
-//         return 'No completed transaction found';
-//     }
-
-//     $service = new \App\Services\TelegramService();
-
-//     // Test 1: Simple message
-//     $result1 = $service->sendMessage('🤖 *Test Notification*' . "\n" . now()->format('Y-m-d H:i:s'));
-
-//     // Test 2: Transaction notification
-//     $result2 = $service->sendNewTransaction($transaction);
-
-//     return response()->json([
-//         'transaction' => [
-//             'id' => $transaction->id,
-//             'invoice' => $transaction->invoice,
-//             'items_count' => $transaction->items->count(),
-//         ],
-//         'telegram_tests' => [
-//             'simple_message' => $result1 ? 'SUCCESS' : 'FAILED',
-//             'transaction_notif' => $result2 ? 'SUCCESS' : 'FAILED',
-//         ],
-//         'config' => [
-//             'bot_token_exists' => !empty(config('services.telegram.bot_token')),
-//             'chat_id_exists' => !empty(config('services.telegram.admin_chat_id')),
-//         ]
-//     ]);
-// });
-
 // ==================== PUBLIC ROUTES ====================
 // Halaman Utama (Bisa diakses tanpa login)
 Route::get('/', [HomeController::class, 'index'])->name('home');

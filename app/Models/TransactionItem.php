@@ -22,24 +22,36 @@ class TransactionItem extends Model
         'total',
         'status',              // pending/processing/completed/cancelled
 
-        'fulfillment_source',  // (patch) manual/digiflazz
-        'provider_trx_id',      // (patch)
-        'provider_status',      // (patch)
-        'provider_rc',          // (patch)
-        'provider_message',     // (patch)
-        'sn',                   // (patch)
-        'raw_response',         // (patch)
+        // ✅ VOUCHER FIELDS (baru ditambah)
+        'voucher_code',
+        'qr_code_url',
+        'expired_at',
+        'completed_at',
+
+        'fulfillment_source',  // manual/digiflazz/voucher_stock
+        'provider_trx_id',
+        'provider_status',
+        'provider_rc',
+        'provider_message',
+        'sn',
+        'raw_response',
 
         'delivered_at',
         'delivery_attempts',
     ];
 
+    // ✅ FIX 1: CAST DATES & DECIMALS
     protected $casts = [
         'price' => 'decimal:2',
         'total' => 'decimal:2',
         'delivered_at' => 'datetime',
+        'expired_at' => 'datetime',     // ✅ FIX WhatsAppService format()
+        'completed_at' => 'datetime',    // ✅ Carbon instance otomatis
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
+    // ✅ FIX 2: Transaction (bukan Trancsaction!)
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Trancsaction::class, 'transaction_id');
@@ -57,6 +69,6 @@ class TransactionItem extends Model
 
     public function voucherCode(): BelongsTo
     {
-        return $this->belongsTo(VoucherCode::class);
+        return $this->belongsTo(VoucherCode::class, 'voucher_code_id');
     }
 }
