@@ -96,23 +96,23 @@
                 </div>
 
                 <!-- Filter Tabs -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 mb-6">
-                    <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+                    <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-3">
                         <button onclick="filterOrders('all')" 
-                                class="filter-btn active w-full sm:w-auto px-4 py-2.5 bg-primary text-white rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 hover:shadow-md">
+                                class="filter-btn active w-full sm:w-auto px-6 py-3.5 bg-primary text-white rounded-xl font-semibold text-sm sm:text-base transition-all duration-200 hover:shadow-md flex items-center justify-center">
                             Semua
                         </button>
                         <button onclick="filterOrders('pending')" 
-                                class="filter-btn w-full sm:w-auto px-4 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200">
-                            <i class='bx bx-time-five mr-1'></i> Proses
+                                class="filter-btn w-full sm:w-auto px-6 py-3.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-xl font-semibold text-sm sm:text-base transition-all duration-200 flex items-center justify-center">
+                            <i class='bx bx-time-five mr-2 text-lg'></i> Proses
                         </button>
                         <button onclick="filterOrders('completed')" 
-                                class="filter-btn w-full sm:w-auto px-4 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200">
-                            <i class='bx bx-check-circle mr-1'></i> Berhasil
+                                class="filter-btn w-full sm:w-auto px-6 py-3.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-xl font-semibold text-sm sm:text-base transition-all duration-200 flex items-center justify-center">
+                            <i class='bx bx-check-circle mr-2 text-lg'></i> Berhasil
                         </button>
                         <button onclick="filterOrders('failed')" 
-                                class="filter-btn w-full sm:w-auto px-4 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200">
-                            <i class='bx bx-x-circle mr-1'></i> Gagal/Batal
+                                class="filter-btn w-full sm:w-auto px-6 py-3.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-xl font-semibold text-sm sm:text-base transition-all duration-200 flex items-center justify-center">
+                            <i class='bx bx-x-circle mr-2 text-lg'></i> Gagal/Batal
                         </button>
                     </div>
                 </div>
