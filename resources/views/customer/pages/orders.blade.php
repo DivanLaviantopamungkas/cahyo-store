@@ -96,23 +96,23 @@
                 </div>
 
                 <!-- Filter Tabs -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-                    <div class="flex flex-wrap gap-2">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 mb-6">
+                    <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
                         <button onclick="filterOrders('all')" 
-                                class="filter-btn active px-4 py-2 bg-primary text-white rounded-lg font-medium transition-all duration-200 hover:shadow-md">
+                                class="filter-btn active w-full sm:w-auto px-4 py-2.5 bg-primary text-white rounded-lg font-medium text-xs sm:text-sm transition-all duration-200 hover:shadow-md">
                             Semua
                         </button>
                         <button onclick="filterOrders('pending')" 
-                                class="filter-btn px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition-all duration-200">
-                            <i class='bx bx-time-five mr-2'></i> Dalam Proses
+                                class="filter-btn w-full sm:w-auto px-4 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200">
+                            <i class='bx bx-time-five mr-1'></i> Proses
                         </button>
                         <button onclick="filterOrders('completed')" 
-                                class="filter-btn px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition-all duration-200">
-                            <i class='bx bx-check-circle mr-2'></i> Berhasil
+                                class="filter-btn w-full sm:w-auto px-4 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200">
+                            <i class='bx bx-check-circle mr-1'></i> Berhasil
                         </button>
                         <button onclick="filterOrders('failed')" 
-                                class="filter-btn px-4 py-2 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium transition-all duration-200">
-                            <i class='bx bx-x-circle mr-2'></i> Gagal/Dibatalkan
+                                class="filter-btn w-full sm:w-auto px-4 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium text-xs sm:text-sm transition-all duration-200">
+                            <i class='bx bx-x-circle mr-1'></i> Gagal/Batal
                         </button>
                     </div>
                 </div>
@@ -257,33 +257,34 @@
 
                                 <!-- Action Buttons -->
                                 <div class="mt-6 pt-6 border-t border-gray-200">
-                                    <div class="flex flex-wrap gap-3">
+                                    <div class="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3">
+                                        
                                         <a href="{{ route('orders.show', $transaction->id) }}" 
-                                        class="px-4 py-2.5 border border-primary text-primary hover:bg-primary hover:text-white rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2">
-                                            <i class='bx bx-show'></i> Lihat Detail
+                                            class="order-1 flex items-center justify-center gap-2 px-3 py-2.5 border border-primary text-primary hover:bg-primary hover:text-white rounded-lg font-semibold text-xs transition-all duration-200">
+                                            <i class='bx bx-show text-sm'></i> <span>Lihat Detail</span>
                                         </a>
                                         
                                         @if($transaction->status == 'completed' && $firstItem && $firstItem->voucher_code)
                                             <button onclick="copyToClipboard('{{ $firstItem->voucher_code }}')"
-                                                    class="px-4 py-2.5 border border-green-600 text-green-600 hover:bg-green-600 hover:text-white rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2">
-                                                <i class='bx bx-copy'></i> Salin Voucher
+                                                    class="order-2 flex items-center justify-center gap-2 px-3 py-2.5 border border-green-600 text-green-600 hover:bg-green-600 hover:text-white rounded-lg font-semibold text-xs transition-all duration-200">
+                                                <i class='bx bx-copy text-sm'></i> <span>Salin Voucher</span>
                                             </button>
                                         @endif
                                         
                                         @if($transaction->status == 'pending')
                                             <a href="{{ route('checkout.payment', $transaction->id) }}" 
-                                            class="px-4 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2">
-                                                <i class='bx bx-credit-card'></i> Lanjutkan Pembayaran
+                                                class="order-2 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary hover:bg-primary-dark text-white rounded-lg font-semibold text-xs transition-all duration-200">
+                                                <i class='bx bx-credit-card text-sm'></i> <span>Lanjutkan Pembayaran</span>
                                             </a>
                                         @endif
                                         
-                                        <a href="{{ route('orders.invoice', $transaction->id) }}" 
-                                        target="_blank"
-                                        class="px-4 py-2.5 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-medium text-sm transition-all duration-200 flex items-center gap-2">
-                                            <i class='bx bx-download'></i> Invoice
+                                        <a href="{{ route('orders.invoice', $transaction->id) }}" target="_blank"
+                                            class="order-3 col-span-2 sm:col-span-1 flex items-center justify-center gap-2 px-3 py-2.5 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg font-semibold text-xs transition-all duration-200">
+                                            <i class='bx bx-download text-sm'></i> <span>Invoice</span>
                                         </a>
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                     @empty
