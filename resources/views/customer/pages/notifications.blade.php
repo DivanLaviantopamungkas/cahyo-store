@@ -121,11 +121,11 @@
             @auth
                 <div class="bg-white rounded-2xl shadow-sm p-4 mb-6">
                     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div class="flex flex-wrap gap-2">
+                        <div class="grid grid-cols-2 gap-2 w-full md:flex md:w-auto">
                             @foreach(['all' => 'Semua', 'promo' => 'Promo', 'transaction' => 'Transaksi', 'system' => 'Sistem'] as $key => $label)
                                 <button @click="filter = '{{ $key }}'; applyFilter()"
                                     :class="filter === '{{ $key }}' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700'"
-                                    class="px-4 py-2 rounded-lg font-medium transition-all">
+                                    class="px-4 py-2 rounded-lg font-medium transition-all text-center">
                                     {{ $label }}
                                 </button>
                             @endforeach
