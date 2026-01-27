@@ -30,24 +30,10 @@
 
                             <div class="relative h-full flex items-center px-7 sm:px-14 md:px-20 text-white z-10">
                                 <div class="max-w-[260px] sm:max-w-xl">
-                                    <div class="flex items-center gap-2 mb-3 sm:mb-5">
-                                        <div class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></div>
-                                        <span class="inline-flex text-[9px] sm:text-[11px] font-black tracking-[0.2em] uppercase text-blue-400">
-                                            Flash Sale Now
-                                        </span>
-                                    </div>
-                                    
                                     <h2 x-text="slide.title" class="text-xl sm:text-4xl md:text-5xl font-black mb-2 sm:mb-4 leading-[1.1] tracking-tighter"></h2>
-                                    <p x-text="slide.description" class="text-[10px] sm:text-base text-gray-300 font-medium line-clamp-2 mb-5 sm:mb-8 max-w-md opacity-90"></p>
+                                    <p x-text="slide.description" class="text-[10px] sm:text-base text-gray-300 font-medium line-clamp-2 opacity-90"></p>
                                     
-                                    <template x-if="slide.button_text">
-                                        <a :href="slide.button_link || '#'" 
-                                        class="inline-flex items-center bg-blue-600 text-white px-5 py-2.5 sm:px-10 sm:py-4 rounded-2xl font-black text-[10px] sm:text-sm hover:bg-white hover:text-blue-600 transition-all shadow-xl shadow-blue-600/20 active:scale-95">
-                                            <span x-text="slide.button_text"></span>
-                                            <i class='bx bx-right-arrow-alt text-lg ml-2'></i>
-                                        </a>
-                                    </template>
-                                </div>
+                                    </div>
                             </div>
                         </div>
                     </div>
