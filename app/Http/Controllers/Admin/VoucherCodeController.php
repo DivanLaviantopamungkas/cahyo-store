@@ -18,12 +18,21 @@ class VoucherCodeController extends BaseAdminController
         $productId = $request->get('product_id');
         $status = $request->get('status');
 
-        $voucherCodes = VoucherCode::query()
-            ->with(['product', 'nominal'])
+        $query = VoucherCode::query()
+            ->with(['product', 'nominal']);
+
+        $stats = [
+            'available' => VoucherCode::where('status', 'available')->count(),
+            'reserved'  => VoucherCode::where('status', 'reserved')->count(),
+            'sold'      => VoucherCode::where('status', 'sold')->count(),
+            'expired'   => VoucherCode::where('status', 'expired')->count(),
+        ];
+
+        $voucherCodes = $query
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('code', 'like', "%{$search}%")
-                        ->orWhere('secret', 'like', "%{$search}%");
+                    ->orWhere('secret', 'like', "%{$search}%");
                 });
             })
             ->when($productId, function ($query) use ($productId) {
@@ -36,12 +45,9 @@ class VoucherCodeController extends BaseAdminController
             ->paginate(15)
             ->withQueryString();
 
-        // Tambahkan ini untuk mendapatkan produk untuk dropdown filter
-        $products = Product::where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        $products = Product::where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
-        return view('admin.voucher-codes.index', compact('voucherCodes', 'products', 'search', 'productId', 'status'));
+        return view('admin.voucher-codes.index', compact('voucherCodes', 'products', 'search', 'productId', 'status', 'stats'));
     }
 
     public function create()
