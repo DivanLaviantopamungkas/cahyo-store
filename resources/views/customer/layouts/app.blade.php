@@ -6,7 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', setting('site_name', 'TopUp Gaming')) - {{ setting('site_description', 'Top Up Game Termurah') }}</title>
+    <title>
+        @yield('title', setting('site_name') ?: 'TopUp Gaming') - {{ setting('site_description') ?: 'Top Up Game Termurah' }}
+    </title>
 
     <!-- Favicon -->
     @if(setting('site_favicon'))

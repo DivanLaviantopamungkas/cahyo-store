@@ -1,348 +1,181 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Transaksi')
-@section('breadcrumb', 'Semua Transaksi')
+@section('title', 'Aktivitas Transaksi')
+@section('subtitle', 'Pantau arus kas dan status pesanan secara real-time')
 
 @section('content')
-    <div class="space-y-4 md:space-y-6">
-        <!-- Search & Filter -->
-        <x-admin.card>
-            <div class="flex flex-col gap-4">
-                <form method="GET" action="{{ route('admin.transactions.index') }}" class="w-full">
-                    <div class="flex flex-col md:flex-row gap-3 md:items-center">
-                        <!-- Search Input -->
-                        <div class="relative flex-1">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-slate-400">
-                                    <use href="#icon-magnifying-glass"></use>
-                                </svg>
-                            </div>
-                            <input type="search" name="q" value="{{ $search }}"
-                                placeholder="Cari invoice atau nama customer..."
-                                class="block w-full pl-10 pr-4 py-2 rounded-xl md:rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all text-sm md:text-base">
+    <div class="space-y-8">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            @php
+                $statConfig = [
+                    'pending'    => ['color' => 'amber', 'label' => 'Menunggu', 'icon' => 'icon-clock'],
+                    'paid'       => ['color' => 'blue', 'label' => 'Terbayar', 'icon' => 'icon-credit-card'],
+                    'processing' => ['color' => 'violet', 'label' => 'Diproses', 'icon' => 'icon-play'],
+                    'completed'  => ['color' => 'emerald', 'label' => 'Selesai', 'icon' => 'icon-check-circle'],
+                ];
+                $counts = [
+                    'pending'    => \App\Models\Trancsaction::where('status', 'pending')->count(),
+                    'paid'       => \App\Models\Trancsaction::whereIn('status', ['paid', 'completed'])->count(),
+                    'processing' => \App\Models\Trancsaction::where('status', 'processing')->count(),
+                    'completed'  => \App\Models\Trancsaction::where('status', 'completed')->count(),
+                ];
+            @endphp
+
+            @foreach($statConfig as $key => $cfg)
+            <div class="relative group">
+                <div class="absolute inset-0 bg-{{ $cfg['color'] }}-500/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity rounded-[2rem]"></div>
+                <div class="relative bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm transition-all group-hover:-translate-y-1">
+                    <div class="flex flex-col gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-{{ $cfg['color'] }}-50 dark:bg-{{ $cfg['color'] }}-500/10 flex items-center justify-center text-{{ $cfg['color'] }}-500">
+                            <svg class="w-6 h-6"><use href="#{{ $cfg['icon'] }}"></use></svg>
                         </div>
-
-                        <!-- Filter Controls -->
-                        <div class="flex flex-col sm:flex-row gap-2 md:items-center">
-                            <select name="status"
-                                class="w-full sm:w-auto text-sm rounded-xl md:rounded-2xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-transparent px-3 py-2">
-                                <option value="">Semua Status</option>
-                                <option value="pending" {{ $status === 'pending' ? 'selected' : '' }}>Pending</option>
-                                <option value="paid" {{ $status === 'paid' ? 'selected' : '' }}>Paid</option>
-                                <option value="processing" {{ $status === 'processing' ? 'selected' : '' }}>Processing
-                                </option>
-                                <option value="completed" {{ $status === 'completed' ? 'selected' : '' }}>Completed</option>
-                                <option value="expired" {{ $status === 'expired' ? 'selected' : '' }}>Expired</option>
-                                <option value="cancelled" {{ $status === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                            </select>
-
-                            <div class="flex gap-2">
-                                <button type="submit"
-                                    class="flex-1 sm:flex-none px-4 py-2 rounded-xl md:rounded-2xl bg-emerald-500 text-white font-medium hover:bg-emerald-600 transition-colors text-sm md:text-base">
-                                    <span class="hidden sm:inline">Filter</span>
-                                    <svg class="w-5 h-5 sm:hidden mx-auto">
-                                        <use href="#icon-funnel"></use>
-                                    </svg>
-                                </button>
-
-                                @if ($status || $search)
-                                    <a href="{{ route('admin.transactions.index') }}"
-                                        class="flex-1 sm:flex-none px-4 py-2 rounded-xl md:rounded-2xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors text-sm md:text-base text-center">
-                                        <span class="hidden sm:inline">Reset</span>
-                                        <svg class="w-5 h-5 sm:hidden mx-auto">
-                                            <use href="#icon-arrow-path"></use>
-                                        </svg>
-                                    </a>
-                                @endif
-                            </div>
+                        <div>
+                            <p class="text-[10px] font-black uppercase tracking-[0.15em] text-slate-400 mb-1">{{ $cfg['label'] }}</p>
+                            <p class="text-2xl font-black text-slate-800 dark:text-white">{{ number_format($counts[$key]) }}</p>
                         </div>
                     </div>
-                </form>
+                </div>
             </div>
-        </x-admin.card>
-
-        <!-- Status Tabs -->
-        <div class="overflow-x-auto pb-2 -mx-4 px-4">
-            <div class="flex space-x-2 min-w-max">
-                @php
-                    // Jika query count terlalu berat, bisa di-cache atau dihitung di controller
-                    try {
-                        $statusCounts = [
-                            'all' => App\Models\Trancsaction::count(),
-                            'pending' => App\Models\Trancsaction::where('status', 'pending')->count(),
-                            'paid' => App\Models\Trancsaction::where('status', 'paid')->count(),
-                            'processing' => App\Models\Trancsaction::where('status', 'processing')->count(),
-                            'completed' => App\Models\Trancsaction::where('status', 'completed')->count(),
-                            'expired' => App\Models\Trancsaction::where('status', 'expired')->count(),
-                            'cancelled' => App\Models\Trancsaction::where('status', 'cancelled')->count(),
-                        ];
-                    } catch (Exception $e) {
-                        $statusCounts = [
-                            'all' => 0,
-                            'pending' => 0,
-                            'paid' => 0,
-                            'processing' => 0,
-                            'completed' => 0,
-                            'expired' => 0,
-                            'cancelled' => 0,
-                        ];
-                    }
-                @endphp
-
-                <a href="{{ route('admin.transactions.index') }}"
-                    class="px-3 py-2 rounded-xl font-medium whitespace-nowrap transition-colors text-sm md:text-base md:rounded-2xl md:px-4 {{ !$status ? 'bg-emerald-500 text-white' : 'border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700' }}">
-                    Semua ({{ $statusCounts['all'] }})
-                </a>
-
-                @foreach (['pending', 'paid', 'processing', 'completed', 'expired', 'cancelled'] as $tabStatus)
-                    <a href="{{ route('admin.transactions.index', ['status' => $tabStatus]) }}"
-                        class="px-3 py-2 rounded-xl font-medium whitespace-nowrap transition-colors text-sm md:text-base md:rounded-2xl md:px-4 {{ $status === $tabStatus ? 'bg-emerald-500 text-white' : 'border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700' }}">
-                        {{ ucfirst($tabStatus) }} ({{ $statusCounts[$tabStatus] }})
-                    </a>
-                @endforeach
-            </div>
+            @endforeach
         </div>
 
-        <!-- Transactions Table -->
-        <x-admin.card class="!p-0 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                    <thead class="bg-slate-50 dark:bg-slate-800/50">
-                        <tr>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap md:px-6 md:py-3">
-                                Invoice</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap md:px-6 md:py-3">
-                                Customer</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap md:px-6 md:py-3">
-                                Produk</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap md:px-6 md:py-3">
-                                Total</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap md:px-6 md:py-3">
-                                Status</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap md:px-6 md:py-3">
-                                Tanggal</th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider whitespace-nowrap md:px-6 md:py-3">
-                                Aksi</th>
+        <div class="bg-white/40 dark:bg-slate-800/40 backdrop-blur-xl p-3 lg:p-4 rounded-[2.5rem] border border-white/20 dark:border-slate-700/50 shadow-2xl shadow-slate-200/50 dark:shadow-none">
+            <form action="{{ route('admin.transactions.index') }}" method="GET" class="flex flex-col lg:flex-row gap-3">
+                <div class="relative flex-1 group">
+                    <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-500 transition-colors">
+                        <svg class="h-5 w-5"><use href="#icon-magnifying-glass"></use></svg>
+                    </div>
+                    <input type="search" name="q" value="{{ $search }}" placeholder="Cari ID Invoice atau nama pelanggan..."
+                        class="block w-full pl-12 pr-4 py-4 rounded-[1.8rem] border-none bg-white dark:bg-slate-900 text-sm font-medium focus:ring-2 focus:ring-emerald-500/50 transition-all shadow-sm">
+                </div>
+
+                <div class="flex gap-2">
+                    <select name="status" onchange="this.form.submit()" class="flex-1 lg:w-48 text-xs font-black uppercase tracking-wider rounded-[1.8rem] border-none bg-white dark:bg-slate-900 py-4 px-6 focus:ring-2 focus:ring-emerald-500/50 cursor-pointer shadow-sm">
+                        <option value="">Semua Status</option>
+                        @foreach(['pending', 'paid', 'processing', 'completed', 'expired', 'cancelled'] as $st)
+                            <option value="{{ $st }}" {{ $status == $st ? 'selected' : '' }}>{{ ucfirst($st) }}</option>
+                        @endforeach
+                    </select>
+
+                    <button type="submit" class="hidden lg:block px-8 rounded-[1.8rem] bg-slate-900 dark:bg-emerald-500 text-white font-black uppercase tracking-widest text-[10px] hover:shadow-xl hover:shadow-emerald-500/20 transition-all active:scale-95">
+                        Filter
+                    </button>
+                    
+                    @if($search || $status)
+                        <a href="{{ route('admin.transactions.index') }}" 
+                           class="flex items-center gap-2 px-6 rounded-[1.8rem] bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-200 transition-all shadow-sm border border-rose-200 dark:border-rose-500/30">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            <span class="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Reset</span>
+                        </a>
+                    @endif
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-[3rem] border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
+            <div class="hidden lg:block overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="bg-slate-50/50 dark:bg-slate-900/50 border-b border-slate-50 dark:border-slate-700">
+                            <th class="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Transaction ID</th>
+                            <th class="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Customer</th>
+                            <th class="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Status</th>
+                            <th class="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 text-right">Amount</th>
+                            <th class="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 text-right">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                    <tbody class="divide-y divide-slate-50 dark:divide-slate-700">
                         @forelse($transactions as $transaction)
-                            @php
-                                $statusColors = [
-                                    'pending' => 'yellow',
-                                    'paid' => 'blue',
-                                    'processing' => 'purple',
-                                    'completed' => 'green',
-                                    'expired' => 'gray',
-                                    'cancelled' => 'red',
-                                ];
-                            @endphp
-                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                                <!-- Invoice Column -->
-                                <td class="px-4 py-3 whitespace-nowrap md:px-6 md:py-4">
-                                    <div class="flex flex-col">
-                                        <div class="text-sm font-medium text-slate-900 dark:text-white">
-                                            {{ $transaction->invoice }}</div>
-                                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                            {{ $transaction->payment_method ?? 'N/A' }}</div>
+                        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-900/80 transition-all group">
+                            <td class="px-8 py-5">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-2 h-2 rounded-full {{ $transaction->status == 'completed' ? 'bg-emerald-500' : 'bg-slate-300' }}"></div>
+                                    <div>
+                                        <p class="font-black text-slate-800 dark:text-white text-sm">#{{ $transaction->invoice }}</p>
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase">{{ $transaction->created_at->format('M d, Y • H:i') }}</p>
                                     </div>
-                                </td>
-
-                                <!-- Customer Column -->
-                                <td class="px-4 py-3 whitespace-nowrap md:px-6 md:py-4">
-                                    <div class="flex flex-col">
-                                        <div
-                                            class="text-sm text-slate-900 dark:text-white truncate max-w-[120px] md:max-w-none">
-                                            {{ $transaction->user->name ?? 'Guest' }}
-                                        </div>
-                                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                            {{ $transaction->user->phone ?? 'N/A' }}
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <!-- Product Column -->
-                                <td class="px-4 py-3 md:px-6 md:py-4">
-                                    <div class="flex flex-col">
-                                        @if ($transaction->items && $transaction->items->isNotEmpty())
-                                            <div
-                                                class="text-sm text-slate-900 dark:text-white truncate max-w-[100px] md:max-w-[150px]">
-                                                {{ $transaction->items->first()->product->name ?? 'N/A' }}
-                                            </div>
-                                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                {{ $transaction->items->first()->nominal->name ?? ($transaction->items->first()->voucherCode->code ?? '') }}
-                                            </div>
-                                        @else
-                                            <div class="text-sm text-slate-500">No items</div>
-                                        @endif
-                                    </div>
-                                </td>
-
-                                <!-- Total Column -->
-                                <td class="px-4 py-3 whitespace-nowrap md:px-6 md:py-4">
-                                    <div class="text-sm font-medium text-slate-900 dark:text-white">
-                                        Rp {{ number_format($transaction->total_amount, 0, ',', '.') }}
-                                    </div>
-                                </td>
-
-                                <!-- Status Column -->
-                                <td class="px-4 py-3 whitespace-nowrap md:px-6 md:py-4">
-                                    <span
-                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                @switch($transaction->status)
-                                    @case('pending') bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 @break
-                                    @case('paid') bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 @break
-                                    @case('processing') bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 @break
-                                    @case('completed') bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200 @break
-                                    @case('expired') bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200 @break
-                                    @case('cancelled') bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 @break
-                                    @default bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200
-                                @endswitch">
-                                        {{ ucfirst($transaction->status) }}
-                                    </span>
-                                </td>
-
-                                <!-- Date Column -->
-                                <td class="px-4 py-3 whitespace-nowrap md:px-6 md:py-4">
-                                    <div class="flex flex-col">
-                                        <div class="text-sm text-slate-900 dark:text-white">
-                                            {{ $transaction->created_at->format('d M Y') }}
-                                        </div>
-                                        <div class="text-xs text-slate-500 dark:text-slate-400">
-                                            {{ $transaction->created_at->format('H:i') }}
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <!-- Actions Column -->
-                                <td class="px-4 py-3 whitespace-nowrap md:px-6 md:py-4">
-                                    <div class="flex items-center space-x-1 md:space-x-2">
-                                        <a href="{{ route('admin.transactions.show', $transaction) }}"
-                                            class="p-1.5 rounded-lg text-sky-600 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 hover:bg-sky-50 dark:hover:bg-sky-900/30 transition-colors"
-                                            title="Detail">
-                                            <svg class="w-4 h-4 md:w-5 md:h-5">
-                                                <use href="#icon-eye"></use>
-                                            </svg>
-                                        </a>
-
-                                        @if ($transaction->status == 'paid')
-                                            <form action="{{ route('admin.transactions.mark-processing', $transaction) }}"
-                                                method="POST" class="inline">
-                                                @csrf
-                                                @method('PUT')
-                                                <button type="submit"
-                                                    class="p-1.5 rounded-lg text-xs text-violet-600 dark:text-violet-400 hover:text-violet-800 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/30 transition-colors"
-                                                    title="Mark as Processing"
-                                                    onclick="return confirm('Set transaksi ke processing?')">
-                                                    <span class="hidden md:inline">Processing</span>
-                                                    <svg class="w-4 h-4 md:hidden">
-                                                        <use href="#icon-play"></use>
-                                                    </svg>
-                                                </button>
-                                            </form>
-                                        @endif
-
-                                        @if ($transaction->status == 'processing')
-                                            <form action="{{ route('admin.transactions.mark-completed', $transaction) }}"
-                                                method="POST" class="inline">
-                                                @csrf
-                                                @method('PUT')
-                                                <button type="submit"
-                                                    class="p-1.5 rounded-lg text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-colors"
-                                                    title="Mark as Completed"
-                                                    onclick="return confirm('Set transaksi ke completed?')">
-                                                    <span class="hidden md:inline">Complete</span>
-                                                    <svg class="w-4 h-4 md:hidden">
-                                                        <use href="#icon-check"></use>
-                                                    </svg>
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
-                                </td>
-                            </tr>
+                                </div>
+                            </td>
+                            <td class="px-8 py-5">
+                                <span class="text-sm font-bold text-slate-600 dark:text-slate-300">{{ $transaction->user->name ?? 'Guest User' }}</span>
+                            </td>
+                            <td class="px-8 py-5 text-center">
+                                @php
+                                    $statusClasses = [
+                                        'pending' => 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-500',
+                                        'paid' => 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-500',
+                                        'processing' => 'bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-500',
+                                        'completed' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-500',
+                                        'cancelled' => 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-500',
+                                    ];
+                                @endphp
+                                <span class="px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest {{ $statusClasses[$transaction->status] ?? 'bg-slate-100 text-slate-500' }}">
+                                    {{ $transaction->status }}
+                                </span>
+                            </td>
+                            <td class="px-8 py-5 text-right font-black text-slate-800 dark:text-white">
+                                <p class="text-sm">Rp {{ number_format($transaction->amount, 0, ',', '.') }}</p>
+                                <p class="text-[9px] text-slate-400 uppercase tracking-tighter">{{ strtoupper(str_replace('_', ' ', $transaction->payment_method ?? 'Unknown')) }}</p>
+                            </td>
+                            <td class="px-8 py-5 text-right">
+                                <a href="{{ route('admin.transactions.show', $transaction) }}" class="p-2.5 bg-slate-100 dark:bg-slate-900 rounded-xl text-slate-400 hover:text-emerald-500 transition-all border border-slate-100 dark:border-slate-700 inline-block shadow-sm">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                </a>
+                            </td>
+                        </tr>
                         @empty
-                            <tr>
-                                <td colspan="7" class="px-4 py-8 text-center md:px-6 md:py-12">
-                                    <div class="text-slate-400 dark:text-slate-500">
-                                        <svg class="w-12 h-12 mx-auto mb-3 md:mb-4 opacity-50">
-                                            <use href="#icon-document-text"></use>
-                                        </svg>
-                                        <p class="text-base md:text-lg font-medium">Tidak ada transaksi ditemukan</p>
-                                        @if ($status || $search)
-                                            <p class="mt-1 md:mt-2 text-sm">Coba dengan filter yang berbeda</p>
-                                        @endif
-                                    </div>
-                                </td>
-                            </tr>
+                            <tr><td colspan="5" class="py-24 text-center text-slate-300 font-black uppercase tracking-[0.3em]">No Transactions Found</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-        </x-admin.card>
 
-        <!-- Pagination -->
-        @if ($transactions->hasPages())
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <p class="text-sm text-slate-500 dark:text-slate-400 text-center sm:text-left">
-                    Menampilkan
-                    <span class="font-medium">{{ $transactions->firstItem() ?? 0 }}</span>
-                    hingga
-                    <span class="font-medium">{{ $transactions->lastItem() ?? 0 }}</span>
-                    dari
-                    <span class="font-medium">{{ $transactions->total() }}</span>
-                    transaksi
-                </p>
-
-                <div class="flex items-center space-x-1">
-                    @if ($transactions->onFirstPage())
-                        <span
-                            class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-400 dark:text-slate-500 text-sm cursor-not-allowed">Sebelumnya</span>
-                    @else
-                        <a href="{{ $transactions->previousPageUrl() }}"
-                            class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm transition-colors">Sebelumnya</a>
-                    @endif
-
-                    <div class="flex items-center space-x-1">
-                        @foreach ($transactions->getUrlRange(1, min(5, $transactions->lastPage())) as $page => $url)
-                            @if ($page == $transactions->currentPage())
-                                <span
-                                    class="px-3 py-1.5 rounded-xl bg-emerald-500 text-white text-sm font-medium">{{ $page }}</span>
-                            @else
-                                <a href="{{ $url }}"
-                                    class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm transition-colors">{{ $page }}</a>
-                            @endif
-                        @endforeach
-
-                        @if ($transactions->lastPage() > 5)
-                            <span class="px-2 text-slate-500">...</span>
-                            <a href="{{ $transactions->url($transactions->lastPage()) }}"
-                                class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm transition-colors">{{ $transactions->lastPage() }}</a>
-                        @endif
+            <div class="lg:hidden p-4 space-y-4">
+                @foreach($transactions as $transaction)
+                <div class="bg-slate-50/50 dark:bg-slate-900/50 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 flex flex-col gap-4 shadow-inner">
+                    <div class="flex justify-between items-start">
+                        <div class="p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 text-slate-500 uppercase font-black text-[9px] tracking-widest">
+                             {{ strtoupper(str_replace('_', ' ', $transaction->payment_method ?? 'PAY')) }}
+                        </div>
+                        <span class="px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest {{ $statusClasses[$transaction->status] ?? 'bg-slate-100' }}">
+                            {{ $transaction->status }}
+                        </span>
                     </div>
 
-                    @if ($transactions->hasMorePages())
-                        <a href="{{ $transactions->nextPageUrl() }}"
-                            class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-sm transition-colors">Selanjutnya</a>
-                    @else
-                        <span
-                            class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-400 dark:text-slate-500 text-sm cursor-not-allowed">Selanjutnya</span>
-                    @endif
+                    <div>
+                        <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">#{{ $transaction->invoice }}</p>
+                        <h3 class="font-black text-slate-800 dark:text-white text-base leading-tight">{{ $transaction->user->name ?? 'Guest User' }}</h3>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase mt-1">{{ $transaction->created_at->format('d M Y • H:i') }}</p>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <div>
+                            <p class="text-lg font-black text-slate-800 dark:text-white leading-none mb-1">Rp {{ number_format($transaction->amount, 0, ',', '.') }}</p>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{{ strtoupper(str_replace('_', ' ', $transaction->payment_method ?? 'Transfer')) }}</p>
+                        </div>
+                        <div class="flex gap-2">
+                             @if ($transaction->status == 'paid')
+                                <form action="{{ route('admin.transactions.mark-processing', $transaction) }}" method="POST">
+                                    @csrf 
+                                    <button class="p-3 bg-violet-500 text-white rounded-2xl shadow-lg shadow-violet-500/30 active:scale-90 transition-transform">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    </button>
+                                </form>
+                            @endif
+                            <a href="{{ route('admin.transactions.show', $transaction) }}" class="p-3 bg-white dark:bg-slate-800 rounded-2xl text-slate-600 dark:text-slate-400 shadow-sm border border-slate-100 dark:border-slate-700 active:scale-90 transition-transform">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            </a>
+                        </div>
+                    </div>
                 </div>
+                @endforeach
             </div>
-        @elseif($transactions->total() > 0)
-            <div class="text-center">
-                <p class="text-sm text-slate-500 dark:text-slate-400">
-                    Menampilkan semua {{ $transactions->total() }} transaksi
-                </p>
+
+            <div class="p-8 bg-slate-50/30 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700">
+                {{ $transactions->links() }}
             </div>
-        @endif
+        </div>
     </div>
 @endsection
