@@ -312,7 +312,7 @@
         <x-admin.card>
             <h3 class="font-semibold text-slate-800 dark:text-white mb-4">Aksi Cepat</h3>
             <div class="space-y-3">
-                <a href="{{ route('admin.products.create') }}?category={{ $category->id }}" 
+                <a href="{{ route('admin.products.create.manual') }}?category={{ $category->id }}" 
                    class="flex items-center justify-center w-full px-4 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 group">
                     <svg class="w-5 h-5 mr-2 group-hover:scale-110 transition-transform">
                         <use href="#icon-plus-circle"></use>
