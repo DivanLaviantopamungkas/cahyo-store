@@ -17,7 +17,7 @@ class MemberController extends Controller
                                       ->orWhere('whatsapp', 'like', "%{$search}%")
                                       ->orWhere('email', 'like', "%{$search}%"))
             ->latest()
-            ->paginate(25);
+            ->paginate(10);
 
         return view('admin.members.index', compact('members', 'search'));
     }
