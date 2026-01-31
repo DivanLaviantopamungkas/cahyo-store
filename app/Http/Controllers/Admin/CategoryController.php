@@ -44,7 +44,7 @@ class CategoryController extends BaseAdminController
                         return $query->orderBy('order')->orderBy('name');
                 }
             })
-            ->paginate(15)
+            ->paginate(10)
             ->appends($request->query());
 
         return $this->view('categories.index', compact('categories', 'search', 'status', 'sort'));

@@ -42,7 +42,7 @@ class ProductController extends BaseAdminController
             })
             ->orderBy('order')
             ->orderBy('name')
-            ->paginate(12)
+            ->paginate(10)
             ->withQueryString();
 
         $categories = Category::orderBy('order')->get();

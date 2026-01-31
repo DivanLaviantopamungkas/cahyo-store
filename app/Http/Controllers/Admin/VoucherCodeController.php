@@ -42,7 +42,7 @@ class VoucherCodeController extends BaseAdminController
                 $query->where('status', $status);
             })
             ->orderBy('created_at', 'desc')
-            ->paginate(15)
+            ->paginate(10)
             ->withQueryString();
 
         $products = Product::where('is_active', true)->orderBy('name')->get(['id', 'name']);

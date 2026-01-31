@@ -19,7 +19,7 @@ class TransactionController extends BaseAdminController
             ->when($status, fn($q) => $q->where('status', $status))
             ->when($search, fn($q) => $q->where('invoice', 'like', "%{$search}%"))
             ->latest()
-            ->paginate(25);
+            ->paginate(10);
 
         return $this->view('transactions.index', compact('transactions', 'status', 'search'));
     }
