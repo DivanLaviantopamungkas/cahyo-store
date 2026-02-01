@@ -26,11 +26,7 @@
 
 @section('content')
     <div class="space-y-8 pb-20">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-                <h2 class="text-2xl lg:text-3xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Import Digiflazz</h2>
-                <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Sinkronisasi produk digital otomatis</p>
-            </div>
+        <div class="flex flex-col md:flex-row justify-end items-start md:items-center gap-4">
             <div class="flex flex-wrap items-center gap-3">
                 <button type="button" onclick="showBulkImportModal()"
                     class="inline-flex items-center px-5 py-3 rounded-2xl bg-violet-500 hover:bg-violet-600 text-white font-bold text-xs uppercase tracking-widest shadow-lg shadow-violet-500/20 transition-all active:scale-95">
