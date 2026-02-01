@@ -1,279 +1,293 @@
 @extends('admin.layouts.app')
 
 @section('title', $product->name)
+
 @section('breadcrumb')
-    <a href="{{ route('admin.products.index') }}">Produk</a>
+    <a href="{{ route('admin.products.index') }}" class="hover:text-emerald-500 transition-colors">Produk</a>
     <svg class="w-4 h-4 text-slate-400"><use href="#icon-chevron-right"></use></svg>
-    <span class="text-slate-600 dark:text-slate-300">Detail</span>
+    <span class="text-slate-600 dark:text-slate-300">Informasi Detail</span>
 @endsection
 
 @section('actions')
-    <div class="flex items-center space-x-3">
-        <a href="{{ route('admin.products.edit', $product->id) }}" class="inline-flex items-center px-4 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
+    <div class="flex items-center gap-3">
+        <a href="{{ route('admin.products.edit', $product->id) }}" 
+           class="inline-flex items-center px-6 py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-95">
             <svg class="w-4 h-4 mr-2"><use href="#icon-pencil"></use></svg>
-            Edit
+            Edit Produk
         </a>
-        <a href="{{ route('admin.products.index') }}" class="inline-flex items-center px-4 py-2 rounded-2xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">
-            <svg class="w-4 h-4 mr-2"><use href="#icon-arrow-left"></use></svg>
+
+        <a href="{{ route('admin.products.index') }}" 
+           class="inline-flex items-center px-6 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-sm">
+            <svg class="w-4 h-4 mr-2 transform rotate-180"><use href="#icon-chevron-right"></use></svg>
             Kembali
         </a>
     </div>
 @endsection
 
 @section('content')
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Product Info -->
-    <div class="lg:col-span-2">
-        <x-admin.card>
-            <div class="flex flex-col md:flex-row md:items-start space-y-6 md:space-y-0 md:space-x-6">
-                <!-- Product Image -->
-                <div class="flex-shrink-0">
-                    @if($product->image && file_exists(public_path($product->image)))
-                    <img src="{{ asset($product->image) }}" alt="{{ $product->name }}" class="w-48 h-48 object-cover rounded-2xl">
-                    @else
-                    <div class="w-48 h-48 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center">
-                        <svg class="w-20 h-20 text-white opacity-80"><use href="#icon-shopping-bag"></use></svg>
-                        @if($product->image && !file_exists(public_path($product->image)))
-                        <div class="absolute bottom-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
-                            File tidak ditemukan
-                        </div>
-                        @endif
-                    </div>
-                    @endif
-                </div>
-
-                <!-- Product Details -->
-                <div class="flex-1">
-                    <div class="flex items-start justify-between">
-                        <div>
-                            <h2 class="text-2xl font-bold text-slate-800 dark:text-white">{{ $product->name }}</h2>
-                            <p class="text-slate-500 dark:text-slate-400 mt-1">{{ $product->slug }}</p>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            @if($product->is_featured)
-                            <x-admin.badge color="yellow" size="sm">Featured</x-admin.badge>
-                            @endif
-                            <x-admin.badge :color="$product->is_active ? 'green' : 'red'" size="sm">
-                                {{ $product->is_active ? 'Aktif' : 'Nonaktif' }}
-                            </x-admin.badge>
-                        </div>
-                    </div>
-
-                    <!-- Category -->
-                    <div class="mt-4">
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Kategori</p>
-                        <div class="flex items-center mt-1">
-                            <div class="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/30">
-                                <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400"><use href="#icon-tag"></use></svg>
-                            </div>
-                            <span class="ml-2 text-slate-800 dark:text-white">
-                                {{ $product->category->name ?? 'Tidak ada kategori' }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Product Type -->
-                    <div class="mt-4">
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Tipe Produk</p>
-                        <x-admin.badge color="blue" size="sm" class="mt-1">
-                            {{ $product->type == 'single' ? 'Single' : 'Multiple' }}
-                        </x-admin.badge>
-                    </div>
-
-                    <!-- Price Range -->
-                    <div class="mt-6">
-                        <p class="text-sm text-slate-500 dark:text-slate-400">Range Harga</p>
-                        <div class="mt-2">
-                            @if($product->nominals->count() > 0)
-                                @php
-                                    $minPrice = $product->nominals->min('price');
-                                    $maxPrice = $product->nominals->max('price');
-                                @endphp
-                                <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                                    Rp {{ number_format($minPrice) }} - Rp {{ number_format($maxPrice) }}
-                                </p>
-                                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                                    {{ $product->nominals->count() }} nominal tersedia
-                                </p>
-                            @else
-                                <p class="text-lg text-slate-400 dark:text-slate-500">—</p>
-                                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                                    Belum ada nominal
-                                </p>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Description -->
-            @if($product->description)
-            <div class="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">
-                <h3 class="font-semibold text-slate-800 dark:text-white mb-3">Deskripsi</h3>
-                <p class="text-slate-600 dark:text-slate-400 whitespace-pre-line">{{ $product->description }}</p>
-            </div>
-            @endif
-        </x-admin.card>
-
-        <!-- Recent Voucher Codes -->
-        @if(isset($recentVouchers) && $recentVouchers->count() > 0)
-        <x-admin.card class="mt-6">
-            <x-slot name="header">
-                <div class="flex items-center justify-between">
-                    <h3 class="font-semibold text-slate-800 dark:text-white">Voucher Terbaru</h3>
-                    <a href="{{ route('admin.voucher-codes.index') }}?product={{ $product->id }}" class="text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-medium">
-                        Lihat semua
-                        <svg class="w-4 h-4 inline ml-1"><use href="#icon-chevron-right"></use></svg>
-                    </a>
-                </div>
-            </x-slot>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-24">
+        <div class="lg:col-span-2 space-y-8">
             
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                    <thead>
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase">Kode</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase">Nominal</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase">Status</th>
-                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase">Tanggal Dibuat</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-                        @foreach($recentVouchers as $voucher)
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                            <td class="px-4 py-3 text-sm text-slate-800 dark:text-white font-mono">{{ $voucher->code }}</td>
-                            <td class="px-4 py-3 text-sm text-slate-800 dark:text-white">
-                                @if($voucher->productNominal)
-                                    Rp {{ number_format($voucher->productNominal->price) }}
-                                @else
-                                    —
-                                @endif
-                            </td>
-                            <td class="px-4 py-3">
-                                @php
-                                    $statusColors = [
-                                        'available' => 'green',
-                                        'sold' => 'emerald',
-                                        'used' => 'blue',
-                                        'expired' => 'red',
-                                        'blocked' => 'rose'
-                                    ];
-                                    $statusLabels = [
-                                        'available' => 'Tersedia',
-                                        'sold' => 'Terjual',
-                                        'used' => 'Terpakai',
-                                        'expired' => 'Kadaluarsa',
-                                        'blocked' => 'Diblokir'
-                                    ];
-                                @endphp
-                                <x-admin.badge :color="$statusColors[$voucher->status] ?? 'gray'" size="sm">
-                                    {{ $statusLabels[$voucher->status] ?? $voucher->status }}
-                                </x-admin.badge>
-                            </td>
-                            <td class="px-4 py-3 text-sm text-slate-800 dark:text-white">{{ $voucher->created_at->format('d M Y, H:i') }}</td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </x-admin.card>
-        @endif
-    </div>
-
-    <!-- Product Stats & Actions -->
-    <div class="space-y-6">
-        <!-- Statistics Card -->
-        <x-admin.card>
-            <h3 class="font-semibold text-slate-800 dark:text-white mb-4">Statistik</h3>
-            <div class="space-y-4">
-                <div class="flex items-center justify-between">
-                    <span class="text-slate-600 dark:text-slate-400">Total Nominal</span>
-                    <span class="font-semibold text-slate-800 dark:text-white">{{ $stats['total_nominals'] }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-slate-600 dark:text-slate-400">Total Voucher</span>
-                    <span class="font-semibold text-slate-800 dark:text-white">{{ $stats['total_vouchers'] }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-slate-600 dark:text-slate-400">Voucher Terjual</span>
-                    <span class="font-semibold text-slate-800 dark:text-white">{{ $stats['sold_vouchers'] }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-slate-600 dark:text-slate-400">Pendapatan</span>
-                    <span class="font-semibold text-emerald-600 dark:text-emerald-400">Rp {{ number_format($stats['total_revenue']) }}</span>
-                </div>
-            </div>
-        </x-admin.card>
-
-        <!-- Product Info Card -->
-        <x-admin.card>
-            <h3 class="font-semibold text-slate-800 dark:text-white mb-4">Informasi Produk</h3>
-            <div class="space-y-3">
-                <div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Kategori</p>
-                    <p class="text-sm text-slate-800 dark:text-white">{{ $product->category->name ?? '—' }}</p>
-                </div>
-                <div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Tipe</p>
-                    <p class="text-sm text-slate-800 dark:text-white">{{ $product->type == 'single' ? 'Single' : 'Multiple' }}</p>
-                </div>
-                <div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Urutan</p>
-                    <p class="text-sm text-slate-800 dark:text-white">{{ $product->order }}</p>
-                </div>
-                <div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Status</p>
-                    <div class="flex items-center mt-1">
-                        @if($product->is_active)
-                            <x-admin.badge color="green" size="sm">Aktif</x-admin.badge>
-                        @else
-                            <x-admin.badge color="red" size="sm">Nonaktif</x-admin.badge>
-                        @endif
+            <div class="bg-white dark:bg-slate-800 rounded-[3rem] border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden group">
+                <div class="p-8 lg:p-10 flex flex-col md:flex-row items-center md:items-start gap-10">
+                    <div class="relative shrink-0">
+                        <div class="w-48 h-48 rounded-[2.5rem] overflow-hidden bg-slate-50 dark:bg-slate-900 border-4 border-white dark:border-slate-700 shadow-2xl flex items-center justify-center group-hover:scale-105 transition-transform duration-500">
+                            @if($product->image && file_exists(public_path($product->image)))
+                                <img src="{{ asset($product->image) }}" alt="{{ $product->name }}" class="w-full h-full object-contain p-4">
+                            @else
+                                <div class="w-full h-full bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center text-white">
+                                    <svg class="w-20 h-20 opacity-40 transition-transform group-hover:rotate-12 duration-500"><use href="#icon-shopping-bag"></use></svg>
+                                </div>
+                            @endif
+                        </div>
+                        
                         @if($product->is_featured)
-                            <x-admin.badge color="yellow" size="sm" class="ml-2">Featured</x-admin.badge>
+                            <div class="absolute -top-3 -right-3 w-12 h-12 bg-amber-400 rounded-full flex items-center justify-center shadow-lg animate-bounce">
+                                <svg class="w-6 h-6 text-white"><use href="#icon-star"></use></svg>
+                            </div>
                         @endif
+                    </div>
+
+                    <div class="flex-1 text-center md:text-left">
+                        <div class="space-y-4">
+                            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <h1 class="text-3xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">{{ $product->name }}</h1>
+                                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-3">
+                                        <span class="px-4 py-1 rounded-full bg-slate-100 dark:bg-slate-900 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest border border-slate-200 dark:border-slate-700">
+                                            {{ $product->slug }}
+                                        </span>
+
+                                        @if($product->is_active)
+                                            <span class="flex items-center px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-black uppercase tracking-widest border border-emerald-500/20">
+                                                <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2 animate-pulse"></div> Aktif
+                                            </span>
+                                        @else
+                                            <span class="flex items-center px-3 py-1 rounded-full bg-rose-500/10 text-rose-500 text-[10px] font-black uppercase tracking-widest border border-rose-500/20">
+                                                <div class="w-1.5 h-1.5 rounded-full bg-rose-500 mr-2"></div> Nonaktif
+                                            </span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-6 rounded-[2rem] bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-700/50 shadow-inner">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Estimasi Range Harga</p>
+
+                                @if($product->nominals->count() > 0)
+                                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-y-2">
+                                        <div class="flex flex-col items-center md:items-start">
+                                            <span class="text-2xl md:text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter">
+                                                Rp {{ number_format($product->nominals->min('price'), 0, ',', '.') }}
+                                            </span>
+                                        </div>
+
+                                        <div class="px-4 flex items-center">
+                                            <span class="bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 text-[9px] font-black px-2 py-1 rounded-md uppercase tracking-tighter shadow-sm">
+                                                s/d
+                                            </span>
+                                        </div>
+
+                                        <div class="flex flex-col items-center md:items-start">
+                                            <span class="text-2xl md:text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter">
+                                                Rp {{ number_format($product->nominals->max('price'), 0, ',', '.') }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 flex items-center justify-center md:justify-start gap-2">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-tight">Total {{ $product->nominals->count() }} Pilihan Nominal Tersedia</p>
+                                    </div>
+                                @else
+                                    <span class="text-xl font-black text-slate-300 italic uppercase tracking-widest">Belum Ada Nominal</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 border-t border-slate-50 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-900/30">
+                    <div class="p-6 text-center border-r border-slate-50 dark:border-slate-700">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Kategori</p>
+                        <p class="text-sm font-black text-slate-700 dark:text-white uppercase">{{ $product->category->name ?? '—' }}</p>
+                    </div>
+
+                    <div class="p-6 text-center border-r border-slate-50 dark:border-slate-700">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tipe Produk</p>
+                        <p class="text-sm font-black text-violet-500 uppercase">{{ $product->type == 'single' ? 'Single' : 'Multiple' }}</p>
+                    </div>
+
+                    <div class="p-6 text-center border-r border-slate-50 dark:border-slate-700">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Urutan Tampil</p>
+                        <p class="text-xl font-black text-emerald-500">#{{ $product->order }}</p>
+                    </div>
+
+                    <div class="p-6 text-center">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Provider</p>
+                        <p class="text-sm font-black text-slate-700 dark:text-white uppercase">{{ $product->source ?? 'Manual' }}</p>
                     </div>
                 </div>
             </div>
-        </x-admin.card>
 
-        <!-- Timestamps Card -->
-        <x-admin.card>
-            <h3 class="font-semibold text-slate-800 dark:text-white mb-4">Timestamp</h3>
-            <div class="space-y-3">
-                <div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Dibuat</p>
-                    <p class="text-sm text-slate-800 dark:text-white">{{ $product->created_at->format('d M Y, H:i') }}</p>
+            @if($product->description)
+                <div class="bg-white dark:bg-slate-800 rounded-[3rem] p-8 lg:p-10 border border-slate-100 dark:border-slate-700 shadow-sm relative overflow-hidden">
+                    <div class="absolute -top-10 -right-10 w-40 h-40 bg-emerald-500/5 rounded-full blur-3xl"></div>
+
+                    <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest mb-6 flex items-center">
+                        <span class="w-8 h-[2px] bg-emerald-500 mr-3"></span>
+                        Deskripsi Produk
+                    </h3>
+
+                    <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium whitespace-pre-line bg-slate-50 dark:bg-slate-900/50 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-inner">
+                        "{{ $product->description }}"
+                    </p>
                 </div>
-                <div>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">Terakhir Diupdate</p>
-                    <p class="text-sm text-slate-800 dark:text-white">{{ $product->updated_at->format('d M Y, H:i') }}</p>
+            @endif
+
+            @if(isset($recentVouchers) && $recentVouchers->count() > 0)
+                <div class="bg-white dark:bg-slate-800 rounded-[3rem] border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                    <div class="p-8 border-b border-slate-50 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-900/50">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+                                <svg class="w-6 h-6"><use href="#icon-ticket"></use></svg>
+                            </div>
+                            <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">Voucher Terbaru</h3>
+                        </div>
+
+                        <a href="{{ route('admin.voucher-codes.index') }}?product={{ $product->id }}" class="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest hover:underline">
+                            Lihat Semua
+                        </a>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-slate-50 dark:bg-slate-900/30">
+                                    <th class="px-8 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Kode</th>
+                                    <th class="px-8 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Nominal</th>
+                                    <th class="px-8 py-4 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Status</th>
+                                    <th class="px-8 py-4 text-right text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Tanggal</th>
+                                </tr>
+                            </thead>
+
+                            <tbody class="divide-y divide-slate-50 dark:divide-slate-700">
+                                @foreach($recentVouchers as $voucher)
+                                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/50 transition-colors">
+                                        <td class="px-8 py-5 text-sm font-mono font-black text-slate-700 dark:text-white tracking-tighter">{{ $voucher->code }}</td>
+                                        <td class="px-8 py-5 text-sm font-black text-slate-700 dark:text-slate-300">
+                                            Rp {{ $voucher->productNominal ? number_format($voucher->productNominal->price, 0, ',', '.') : '—' }}
+                                        </td>
+                                        <td class="px-8 py-5">
+                                            @php
+                                                $vStatus = [
+                                                    'available' => ['clr' => 'emerald', 'lbl' => 'Tersedia'],
+                                                    'sold' => ['clr' => 'blue', 'lbl' => 'Terjual'],
+                                                    'used' => ['clr' => 'slate', 'lbl' => 'Terpakai'],
+                                                    'expired' => ['clr' => 'rose', 'lbl' => 'Kadaluarsa'],
+                                                    'blocked' => ['clr' => 'rose', 'lbl' => 'Blokir']
+                                                ];
+                                                $vS = $vStatus[$voucher->status] ?? ['clr' => 'slate', 'lbl' => $voucher->status];
+                                            @endphp
+
+                                            <span class="px-3 py-1 rounded-lg bg-{{ $vS['clr'] }}-500/10 text-{{ $vS['clr'] }}-500 text-[8px] font-black uppercase tracking-widest border border-{{ $vS['clr'] }}-500/10">
+                                                {{ $vS['lbl'] }}
+                                            </span>
+                                        </td>
+                                        <td class="px-8 py-5 text-right text-[10px] font-bold text-slate-400 uppercase">{{ $voucher->created_at->format('d M Y, H:i') }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            @endif
+        </div>
+
+        <div class="space-y-8">
+            
+            <div class="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-700 shadow-sm relative overflow-hidden group">
+                <h3 class="text-[11px] font-black text-slate-800 dark:text-white uppercase tracking-[0.2em] mb-8 flex items-center justify-between">
+                    Statistik Performa
+                    <svg class="w-4 h-4 text-emerald-500"><use href="#icon-chart-bar"></use></svg>
+                </h3>
+                
+                <div class="grid grid-cols-1 gap-6">
+                    @php
+                        $perfStats = [
+                            ['lbl' => 'Total Nominal', 'val' => $stats['total_nominals'], 'icon' => '#icon-list-bullet', 'clr' => 'violet'],
+                            ['lbl' => 'Stok Voucher', 'val' => $stats['total_vouchers'], 'icon' => '#icon-ticket', 'clr' => 'blue'],
+                            ['lbl' => 'Voucher Terjual', 'val' => $stats['sold_vouchers'], 'icon' => '#icon-check-circle', 'clr' => 'emerald'],
+                        ];
+                    @endphp
+
+                    @foreach($perfStats as $pStat)
+                        <div class="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 shadow-inner border border-slate-100 dark:border-slate-700">
+                            <div class="w-12 h-12 rounded-xl bg-{{ $pStat['clr'] }}-500/10 text-{{ $pStat['clr'] }}-500 flex items-center justify-center shrink-0 shadow-sm">
+                                <svg class="w-6 h-6"><use href="{{ $pStat['icon'] }}"></use></svg>
+                            </div>
+                            <div>
+                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest">{{ $pStat['lbl'] }}</p>
+                                <p class="text-xl font-black text-slate-800 dark:text-white tracking-tighter">{{ number_format($pStat['val'], 0, ',', '.') }}</p>
+                            </div>
+                        </div>
+                    @endforeach
+
+                    <div class="mt-2 p-6 rounded-3xl bg-emerald-500 text-white shadow-xl shadow-emerald-500/20 relative overflow-hidden group">
+                        <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-white opacity-10 rounded-full group-hover:scale-150 transition-transform duration-700"></div>
+                        <p class="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">Total Pendapatan</p>
+                        <p class="text-2xl font-black tracking-tighter">Rp {{ number_format($stats['total_revenue'], 0, ',', '.') }}</p>
+                    </div>
                 </div>
             </div>
-        </x-admin.card>
 
-        <!-- Quick Actions Card -->
-        <x-admin.card>
-            <h3 class="font-semibold text-slate-800 dark:text-white mb-4">Aksi Cepat</h3>
-            <div class="space-y-3">
-                <a href="{{ route('admin.voucher-codes.create') }}?product={{ $product->id }}" class="flex items-center justify-center w-full px-4 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
-                    <svg class="w-5 h-5 mr-2"><use href="#icon-ticket"></use></svg>
-                    Tambah Voucher
+            <div class="bg-white dark:bg-slate-800 rounded-[2.5rem] p-6 border border-slate-100 dark:border-slate-700 shadow-sm space-y-3">
+                <h3 class="text-[11px] font-black text-slate-800 dark:text-white uppercase tracking-[0.2em] mb-4 ml-2">Aksi Cepat</h3>
+                
+                <a href="{{ route('admin.voucher-codes.create') }}?product={{ $product->id }}" 
+                    class="flex items-center justify-between w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 hover:bg-emerald-500 hover:text-white transition-all duration-300 group shadow-inner">
+                    <span class="text-[10px] font-black uppercase tracking-widest">Tambah Stok Voucher</span>
+                    <svg class="w-5 h-5 group-hover:rotate-90 transition-transform"><use href="#icon-plus-circle"></use></svg>
                 </a>
-                <a href="{{ route('admin.products.edit', $product->id) }}" class="flex items-center justify-center w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">
-                    <svg class="w-5 h-5 mr-2"><use href="#icon-pencil"></use></svg>
-                    Edit Produk
+
+                <a href="{{ route('admin.products.edit', $product->id) }}" 
+                    class="flex items-center justify-between w-full p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 hover:bg-sky-500 hover:text-white transition-all duration-300 group shadow-inner">
+                    <span class="text-[10px] font-black uppercase tracking-widest">Ubah Detail Produk</span>
+                    <svg class="w-5 h-5 group-hover:rotate-12 transition-transform"><use href="#icon-pencil-square"></use></svg>
                 </a>
-                <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('Hapus produk ini?')" class="w-full">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="flex items-center justify-center w-full px-4 py-3 rounded-2xl border border-rose-300 dark:border-rose-600 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 font-medium transition-colors">
-                        <svg class="w-5 h-5 mr-2"><use href="#icon-trash"></use></svg>
-                        Hapus Produk
+
+                <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" onsubmit="return confirm('Hapus produk ini?')">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="flex items-center justify-between w-full p-4 rounded-2xl bg-rose-500/5 text-rose-500 hover:bg-rose-500 hover:text-white transition-all duration-300 group shadow-inner border border-rose-500/10">
+                        <span class="text-[10px] font-black uppercase tracking-widest">Hapus Permanen</span>
+                        <svg class="w-5 h-5 group-hover:scale-110 transition-transform"><use href="#icon-trash"></use></svg>
                     </button>
                 </form>
             </div>
-        </x-admin.card>
+
+            <div class="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
+                <h3 class="text-[11px] font-black text-slate-800 dark:text-white uppercase tracking-[0.2em] mb-6">Log Aktivitas</h3>
+                <div class="space-y-6">
+                    <div class="flex items-start gap-4">
+                        <div class="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400 border border-slate-100 dark:border-slate-700 shadow-sm shrink-0">
+                            <svg class="w-4 h-4"><use href="#icon-calendar"></use></svg>
+                        </div>
+                        <div>
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Dibuat Pada</p>
+                            <p class="text-xs font-bold text-slate-700 dark:text-slate-300">{{ $product->created_at->translatedFormat('d F Y, H:i') }} WIB</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start gap-4">
+                        <div class="w-8 h-8 rounded-xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-400 border border-slate-100 dark:border-slate-700 shadow-sm shrink-0">
+                            <svg class="w-4 h-4"><use href="#icon-clock"></use></svg>
+                        </div>
+                        <div>
+                            <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Pembaruan Terakhir</p>
+                            <p class="text-xs font-bold text-slate-700 dark:text-slate-300">{{ $product->updated_at->translatedFormat('d F Y, H:i') }} WIB</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
 @endsection

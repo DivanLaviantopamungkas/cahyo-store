@@ -22,7 +22,7 @@
         <div x-show="open" x-transition class="flex flex-col space-y-3 items-end">
             <a href="{{ route('admin.products.create.digiflazz') }}" class="flex items-center px-4 py-3 rounded-2xl bg-blue-600 text-white shadow-xl">
                 <span class="mr-2 text-xs font-bold uppercase">Import</span>
-                <svg class="w-5 h-5"><use href="#icon-refresh"></use></svg>
+                <svg class="w-5 h-5"><use href="#icon-plus"></use></svg>
             </a>
 
             <a href="{{ route('admin.products.create.manual') }}" class="flex items-center px-4 py-3 rounded-2xl bg-emerald-600 text-white shadow-xl">
