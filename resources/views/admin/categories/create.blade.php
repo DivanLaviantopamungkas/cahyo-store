@@ -1,8 +1,10 @@
 @extends('admin.layouts.app')
 
 @section('title', 'Tambah Kategori')
+@section('subtitle', 'Buat kategori baru untuk mengorganisir produk Anda')
+
 @section('breadcrumb')
-    <a href="{{ route('admin.categories.index') }}">Kategori</a>
+    <a href="{{ route('admin.categories.index') }}" class="hover:text-emerald-500 transition-colors">Kategori</a>
     <svg class="w-4 h-4 text-slate-400">
         <use href="#icon-chevron-right"></use>
     </svg>
@@ -11,7 +13,7 @@
 
 @section('actions')
     <a href="{{ route('admin.categories.index') }}"
-        class="inline-flex items-center px-4 py-2 rounded-2xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">
+        class="inline-flex items-center px-5 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-bold text-xs uppercase tracking-widest transition-all active:scale-95 shadow-sm">
         <svg class="w-4 h-4 mr-2 transform rotate-180">
             <use href="#icon-chevron-right"></use>
         </svg>
@@ -20,479 +22,233 @@
 @endsection
 
 @section('content')
-    <div class="max-w-2xl">
-        <x-admin.card>
-            <form action="{{ route('admin.categories.store') }}" method="POST" enctype="multipart/form-data">
-                @csrf
+    <div class="max-w-5xl mx-auto pb-20">
+        <form action="{{ route('admin.categories.store') }}" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            @csrf
 
-                <div class="space-y-6">
-                    <!-- Basic Information -->
-                    <div>
-                        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Informasi Dasar</h3>
-                        <div class="space-y-4">
-                            <!-- Nama Kategori -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden transition-all hover:shadow-md">
+                    <div class="p-6 lg:p-8 space-y-8">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                                <svg class="w-6 h-6"><use href="#icon-tag"></use></svg>
+                            </div>
                             <div>
-                                <label for="name"
-                                    class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                    Nama Kategori *
-                                    @error('name')
-                                        <span class="text-rose-600 dark:text-rose-400 ml-1">({{ $message }})</span>
-                                    @enderror
+                                <h3 class="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tight">Informasi Dasar</h3>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Detail utama kategori anda</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="group">
+                                <label for="name" class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 ml-1 group-focus-within:text-emerald-500 transition-colors">
+                                    Nama Kategori <span class="text-rose-500">*</span>
                                 </label>
                                 <input type="text" id="name" name="name" value="{{ old('name') }}" required
-                                    class="block w-full px-4 py-3 rounded-2xl border @error('name') border-rose-500 @else border-slate-300 dark:border-slate-600 @enderror bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                                    class="block w-full px-6 py-4 rounded-[1.5rem] border-none bg-slate-50 dark:bg-slate-900/50 text-slate-800 dark:text-white font-bold text-sm focus:ring-2 focus:ring-emerald-500/50 transition-all shadow-inner placeholder-slate-400"
                                     placeholder="Contoh: Game Online" autofocus>
                                 @error('name')
-                                    <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p>
+                                    <p class="text-[10px] font-bold text-rose-500 mt-2 ml-2 uppercase tracking-widest">{{ $message }}</p>
                                 @enderror
                             </div>
 
-                            <!-- Deskripsi -->
+                            <div class="group">
+                                <label for="description" class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3 ml-1 group-focus-within:text-emerald-500 transition-colors">
+                                    Deskripsi Singkat
+                                </label>
+                                <textarea id="description" name="description" rows="4"
+                                    class="block w-full px-6 py-4 rounded-[1.5rem] border-none bg-slate-50 dark:bg-slate-900/50 text-slate-800 dark:text-white font-medium text-sm focus:ring-2 focus:ring-emerald-500/50 transition-all shadow-inner placeholder-slate-400 resize-none"
+                                    placeholder="Jelaskan secara singkat kategori ini...">{{ old('description') }}</textarea>
+                                <div class="flex justify-between mt-2 px-2">
+                                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Informasi tambahan untuk pelanggan</p>
+                                    <span class="text-[10px] font-black text-slate-400 tracking-tighter" id="charCount">0/500</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden transition-all hover:shadow-md">
+                    <div class="p-6 lg:p-8 space-y-8">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-violet-500/10 flex items-center justify-center text-violet-500">
+                                <svg class="w-6 h-6"><use href="#icon-photo"></use></svg>
+                            </div>
                             <div>
-                                <label for="description"
-                                    class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                    Deskripsi
-                                    @error('description')
-                                        <span class="text-rose-600 dark:text-rose-400 ml-1">({{ $message }})</span>
-                                    @enderror
-                                </label>
-                                <textarea id="description" name="description" rows="3"
-                                    class="block w-full px-4 py-3 rounded-2xl border @error('description') border-rose-500 @else border-slate-300 dark:border-slate-600 @enderror bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none"
-                                    placeholder="Deskripsi singkat tentang kategori (opsional)">{{ old('description') }}</textarea>
-                                <div class="flex justify-between">
-                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Maksimal 500 karakter</p>
-                                    <span class="text-xs text-slate-500 dark:text-slate-400" id="charCount">0/500</span>
-                                </div>
-                            </div>
-
-                            <!-- Slug (Hidden - auto generated) -->
-                            <input type="hidden" id="slug" name="slug" value="{{ old('slug') }}">
-
-                            <!-- Preview Slug -->
-                            @if (old('slug') || old('name'))
-                                <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4">
-                                    <div class="text-sm text-slate-600 dark:text-slate-400 mb-2">Preview URL:</div>
-                                    <div class="font-mono text-sm text-emerald-600 dark:text-emerald-400">
-                                        {{ url('/categories') }}/<span
-                                            id="slugPreview">{{ old('slug') ?: Str::slug(old('name')) ?: 'nama-kategori' }}</span>
-                                    </div>
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-
-                    <!-- Image Upload -->
-                    <div>
-                        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Gambar Kategori</h3>
-                        <div class="space-y-4">
-                            <!-- Image Upload -->
-                            <div>
-                                <label for="image"
-                                    class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                    Gambar Kategori
-                                    @error('image')
-                                        <span class="text-rose-600 dark:text-rose-400 ml-1">({{ $message }})</span>
-                                    @enderror
-                                </label>
-
-                                <!-- File Input -->
-                                <div class="mb-4">
-                                    <div class="flex items-center justify-center w-full">
-                                        <label for="image"
-                                            class="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-2xl border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors">
-                                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                                <svg class="w-12 h-12 mb-4 text-slate-400" fill="none"
-                                                    stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
-                                                    </path>
-                                                </svg>
-                                                <p class="mb-2 text-sm text-slate-500 dark:text-slate-400">
-                                                    <span class="font-semibold">Klik untuk upload</span> atau drag and drop
-                                                </p>
-                                                <p class="text-xs text-slate-500 dark:text-slate-400">
-                                                    JPG, PNG, GIF, atau SVG (Maks. 2MB)
-                                                </p>
-                                            </div>
-                                            <input id="image" name="image" type="file" class="hidden"
-                                                accept="image/*" />
-                                        </label>
-                                    </div>
-                                    @error('image')
-                                        <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p>
-                                    @enderror
-                                </div>
-
-                                <!-- Image Preview -->
-                                <div id="imagePreviewContainer" class="{{ old('image') ? '' : 'hidden' }}">
-                                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                        Preview Gambar
-                                    </label>
-                                    <div class="relative inline-block">
-                                        <img id="imagePreview" src="{{ old('image') ? '' : '#' }}" alt="Preview"
-                                            class="w-32 h-32 object-cover rounded-xl border border-slate-200 dark:border-slate-700">
-                                        <button type="button" id="removeImageBtn"
-                                            class="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-rose-600 transition-colors">
-                                            <svg class="w-4 h-4">
-                                                <use href="#icon-x"></use>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">
-                                        Gambar akan ditampilkan sebagai ikon kategori
-                                    </p>
-                                </div>
+                                <h3 class="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tight">Media Visual</h3>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Icon atau gambar kategori</p>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Settings -->
-                    <div>
-                        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Pengaturan</h3>
-                        <div class="space-y-4">
-                            <!-- Status Aktif -->
-                            <div
-                                class="flex items-center justify-between p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                                <div>
-                                    <label for="is_active"
-                                        class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                                        Status Aktif
-                                        @error('is_active')
-                                            <span class="text-rose-600 dark:text-rose-400 ml-1">({{ $message }})</span>
-                                        @enderror
-                                    </label>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">Kategori akan ditampilkan jika
-                                        aktif</p>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="is_active" name="is_active" value="1"
-                                        {{ old('is_active', true) ? 'checked' : '' }} class="sr-only peer">
-                                    <div
-                                        class="w-11 h-6 bg-slate-300 dark:bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-emerald-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500">
-                                    </div>
-                                </label>
-                            </div>
-
-                            <!-- Urutan -->
-                            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                                <label for="order"
-                                    class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                                    Urutan
-                                    @error('order')
-                                        <span class="text-rose-600 dark:text-rose-400 ml-1">({{ $message }})</span>
-                                    @enderror
-                                </label>
-                                <div class="flex items-center space-x-3">
-                                    <input type="number" id="order" name="order"
-                                        value="{{ old('order', $suggestedOrder ?? 0) }}" min="0"
-                                        class="block w-32 px-4 py-3 rounded-2xl border @error('order') border-rose-500 @else border-slate-300 dark:border-slate-600 @enderror bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
-                                    <div class="text-sm text-slate-500 dark:text-slate-400">
-                                        <div class="font-medium">Saran: <span
-                                                class="text-emerald-600 dark:text-emerald-400">{{ $suggestedOrder ?? 'auto' }}</span>
-                                        </div>
-                                        <div class="text-xs">Angka lebih kecil = lebih awal</div>
-                                    </div>
-                                </div>
-                                @error('order')
-                                    <p class="text-xs text-rose-600 dark:text-rose-400 mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Preview -->
-                    <div>
-                        <h3 class="text-lg font-semibold text-slate-800 dark:text-white mb-4">Preview</h3>
-                        <div
-                            class="p-6 rounded-2xl border border-slate-200 dark:border-slate-700 bg-gradient-to-br from-slate-50 to-white dark:from-slate-800 dark:to-slate-900">
-                            <h4 class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-4">Tampilan Kategori</h4>
-                            <div class="flex items-center space-x-4">
-                                <!-- Image Preview -->
-                                <div
-                                    class="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700">
-                                    <img id="previewImage" src="{{ old('image') ? '' : '#' }}" alt="Preview"
-                                        class="w-full h-full object-cover"
-                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                    <div id="defaultIconPreview"
-                                        class="w-full h-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
-                                        <svg class="w-6 h-6">
-                                            <use href="#icon-photo"></use>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                            <div class="space-y-4">
+                                <label class="relative flex flex-col items-center justify-center w-full h-48 border-4 border-dashed rounded-[2rem] border-slate-100 dark:border-slate-700 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 hover:bg-slate-50 dark:hover:bg-slate-900/50 cursor-pointer transition-all group overflow-hidden shadow-inner text-center">
+                                    <div class="flex flex-col items-center justify-center pt-5 pb-6 transition-all group-hover:scale-110">
+                                        <svg class="w-10 h-10 mb-3 text-slate-300 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                                         </svg>
+                                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pilih Gambar</p>
                                     </div>
-                                </div>
-
-                                <!-- Info Preview -->
-                                <div>
-                                    <div id="namePreview" class="text-lg font-semibold text-slate-800 dark:text-white">
-                                        {{ old('name') ?: 'Game Online' }}
-                                    </div>
-                                    @if (old('description'))
-                                        <div id="descriptionPreview"
-                                            class="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                                            {{ old('description') }}
-                                        </div>
-                                    @endif
-                                    <div class="flex items-center mt-2 space-x-3">
-                                        <div id="statusPreview"
-                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ old('is_active', true) ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300' }}">
-                                            {{ old('is_active', true) ? 'Aktif' : 'Nonaktif' }}
-                                        </div>
-                                        <div class="text-xs text-slate-500 dark:text-slate-400">
-                                            Urutan: <span id="orderPreview"
-                                                class="font-medium">{{ old('order', $suggestedOrder ?? 0) }}</span>
-                                        </div>
-                                    </div>
-                                </div>
+                                    <input id="image" name="image" type="file" class="hidden" accept="image/*" />
+                                </label>
                             </div>
-                        </div>
-                    </div>
 
-                    <!-- Submit -->
-                    <div class="pt-6 border-t border-slate-200 dark:border-slate-700">
-                        <div class="flex justify-between items-center">
-                            <div class="text-sm text-slate-500 dark:text-slate-400">
-                                <span class="font-medium">*</span> Wajib diisi
-                            </div>
-                            <div class="flex space-x-3">
-                                <a href="{{ route('admin.categories.index') }}"
-                                    class="px-6 py-3 rounded-2xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">
-                                    Batal
-                                </a>
-                                <button type="submit"
-                                    class="px-6 py-3 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center">
-                                    <svg class="w-5 h-5 mr-2">
-                                        <use href="#icon-check"></use>
-                                    </svg>
-                                    Simpan Kategori
+                            <div id="imagePreviewContainer" class="hidden relative group/preview">
+                                <img id="imagePreview" src="#" alt="Preview" class="w-full h-48 object-cover rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-lg">
+                                <button type="button" id="removeImageBtn" class="absolute -top-3 -right-3 bg-rose-500 text-white rounded-2xl p-2.5 shadow-xl hover:bg-rose-600 transition-all active:scale-90 border-4 border-white dark:border-slate-800">
+                                    <svg class="w-4 h-4"><use href="#icon-x-mark"></use></svg>
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
-            </form>
-        </x-admin.card>
+            </div>
+
+            <div class="space-y-6">
+                <div class="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden p-6 lg:p-8">
+                    <h3 class="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest mb-6">Status & Posisi</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-inner transition-all hover:border-emerald-500/30">
+                            <div>
+                                <span class="block text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-widest">Status Aktif</span>
+                                <span class="text-[9px] font-bold text-slate-400 uppercase mt-1">Tampil di client</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="is_active" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }} class="sr-only peer">
+                                <div class="w-12 h-6.5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[3px] after:left-[3px] after:bg-white after:rounded-full after:h-5.5 after:w-5.5 after:transition-all peer-checked:bg-emerald-500 shadow-sm"></div>
+                            </label>
+                        </div>
+
+                        <div class="group p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-inner transition-all hover:border-emerald-500/30">
+                            <label for="order" class="block text-[10px] font-black text-slate-800 dark:text-white uppercase tracking-widest mb-3">
+                                Urutan Tampil
+                            </label>
+                            <div class="flex items-center gap-4">
+                                <input type="number" id="order" name="order" value="{{ old('order', $suggestedOrder ?? 0) }}" min="0"
+                                    class="w-24 px-4 py-2.5 rounded-xl border-none bg-white dark:bg-slate-800 text-slate-800 dark:text-white font-black text-sm focus:ring-2 focus:ring-emerald-500/50 transition-all shadow-sm">
+                                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-tight">Posisi tampilan<br>menu</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sticky top-6">
+                    <div class="relative bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-xl overflow-hidden group">
+                        <div id="statusPreviewBadge" class="absolute top-4 right-4 z-10 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em] shadow-lg transition-colors {{ old('is_active', true) ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white' }}">
+                            {{ old('is_active', true) ? 'Active' : 'Offline' }}
+                        </div>
+
+                        <div class="aspect-square bg-slate-50 dark:bg-slate-900 flex items-center justify-center relative">
+                            <img id="cardPreviewImg" src="#" class="w-full h-full object-cover hidden transition-transform group-hover:scale-110 duration-700">
+                            <div id="defaultIconPreview" class="flex flex-col items-center gap-2 text-slate-300 dark:text-slate-700">
+                                <svg class="w-16 h-16 opacity-20"><use href="#icon-photo"></use></svg>
+                                <span class="text-[8px] font-black uppercase tracking-widest">Visual Preview</span>
+                            </div>
+                        </div>
+                        
+                        <div class="p-6 text-center">
+                            <h4 id="namePreview" class="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter truncate">Nama Kategori</h4>
+                            <p id="descriptionPreview" class="text-[10px] text-slate-400 mt-2 line-clamp-2 leading-relaxed">Deskripsi kategori akan muncul di sini untuk dilihat pengunjung.</p>
+                            
+                            <div class="mt-6 pt-6 border-t border-slate-50 dark:border-slate-700 flex items-center justify-between px-2">
+                                <div class="text-left">
+                                    <span class="block text-[8px] font-black text-slate-300 uppercase tracking-widest">Order Posisi</span>
+                                    <span id="orderPreview" class="text-sm font-black text-emerald-500">{{ old('order', $suggestedOrder ?? 0) }}</span>
+                                </div>
+                                <div class="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                                    <svg class="w-5 h-5"><use href="#icon-arrow-right-circle"></use></svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 space-y-3">
+                        <button type="submit" class="w-full py-5 rounded-[1.8rem] bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-[0.2em] text-[11px] shadow-xl shadow-emerald-500/30 transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-3 group">
+                            <span>Simpan Kategori</span>
+                            <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform"><use href="#icon-check"></use></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
     </div>
 @endsection
 
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Elements
             const nameInput = document.getElementById('name');
             const descriptionInput = document.getElementById('description');
             const imageInput = document.getElementById('image');
             const orderInput = document.getElementById('order');
             const isActiveInput = document.getElementById('is_active');
 
-            // Preview elements
-            const imagePreviewContainer = document.getElementById('imagePreviewContainer');
-            const imagePreview = document.getElementById('imagePreview');
-            const previewImage = document.getElementById('previewImage');
-            const defaultIconPreview = document.getElementById('defaultIconPreview');
+            // Preview Selectors
             const namePreview = document.getElementById('namePreview');
             const descriptionPreview = document.getElementById('descriptionPreview');
-            const statusPreview = document.getElementById('statusPreview');
             const orderPreview = document.getElementById('orderPreview');
-            const slugPreview = document.getElementById('slugPreview');
-            const slugInput = document.getElementById('slug');
-            const removeImageBtn = document.getElementById('removeImageBtn');
+            const statusPreviewBadge = document.getElementById('statusPreviewBadge');
+            const imagePreview = document.getElementById('imagePreview');
+            const cardPreviewImg = document.getElementById('cardPreviewImg');
+            const defaultIconPreview = document.getElementById('defaultIconPreview');
+            const previewContainer = document.getElementById('imagePreviewContainer');
+            const charCount = document.getElementById('charCount');
 
-            // Character counter for description
-            if (descriptionInput) {
-                const charCount = document.getElementById('charCount');
+            // 1. Name Preview
+            nameInput.addEventListener('input', function() {
+                namePreview.textContent = this.value || 'Nama Kategori';
+            });
 
-                function updateCharCount() {
-                    const length = descriptionInput.value.length;
-                    charCount.textContent = `${length}/500`;
+            // 2. Description Counter & Preview
+            descriptionInput.addEventListener('input', function() {
+                const len = this.value.length;
+                charCount.textContent = `${len}/500`;
+                descriptionPreview.textContent = this.value || 'Deskripsi kategori akan muncul di sini...';
+                
+                if(len > 450) charCount.classList.add('text-rose-500');
+                else charCount.classList.remove('text-rose-500');
+            });
 
-                    if (length > 500) {
-                        charCount.classList.add('text-rose-600', 'dark:text-rose-400');
-                    } else {
-                        charCount.classList.remove('text-rose-600', 'dark:text-rose-400');
+            // 3. Image Logic
+            imageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        imagePreview.src = e.target.result;
+                        previewContainer.classList.remove('hidden');
+                        
+                        cardPreviewImg.src = e.target.result;
+                        cardPreviewImg.classList.remove('hidden');
+                        defaultIconPreview.classList.add('hidden');
                     }
-
-                    if (descriptionPreview) {
-                        descriptionPreview.textContent = descriptionInput.value || 'Tidak ada deskripsi';
-                    }
+                    reader.readAsDataURL(file);
                 }
+            });
 
-                descriptionInput.addEventListener('input', updateCharCount);
-                updateCharCount(); // Initial count
-            }
+            document.getElementById('removeImageBtn').addEventListener('click', function() {
+                imageInput.value = '';
+                previewContainer.classList.add('hidden');
+                cardPreviewImg.classList.add('hidden');
+                defaultIconPreview.classList.remove('hidden');
+            });
 
-            // Auto-generate slug from name
-            if (nameInput) {
-                function generateSlug(text) {
-                    return text
-                        .toLowerCase()
-                        .replace(/[^\w\s-]/g, '')
-                        .replace(/[\s_-]+/g, '-')
-                        .replace(/^-+|-+$/g, '');
+            // 4. Status Badge Logic
+            isActiveInput.addEventListener('change', function() {
+                if(this.checked) {
+                    statusPreviewBadge.textContent = 'Active';
+                    statusPreviewBadge.className = 'absolute top-4 right-4 z-10 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em] shadow-lg bg-emerald-500 text-white';
+                } else {
+                    statusPreviewBadge.textContent = 'Offline';
+                    statusPreviewBadge.className = 'absolute top-4 right-4 z-10 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-[0.2em] shadow-lg bg-rose-500 text-white';
                 }
+            });
 
-                nameInput.addEventListener('input', function() {
-                    const name = this.value;
-
-                    if (namePreview) {
-                        namePreview.textContent = name || 'Game Online';
-                    }
-
-                    // Only auto-generate slug if slug field is empty or matches previous auto-generated slug
-                    if (!slugInput.value || slugInput.value === generateSlug(nameInput.dataset.lastName ||
-                            '')) {
-                        const slug = generateSlug(name);
-                        slugInput.value = slug;
-
-                        if (slugPreview) {
-                            slugPreview.textContent = slug || 'nama-kategori';
-                        }
-                    }
-
-                    nameInput.dataset.lastName = name;
-                });
-
-                // Initialize
-                if (nameInput.value) {
-                    nameInput.dispatchEvent(new Event('input'));
-                }
-            }
-
-            // Image upload preview
-            if (imageInput) {
-                imageInput.addEventListener('change', function(e) {
-                    const file = e.target.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            if (imagePreview) {
-                                imagePreview.src = e.target.result;
-                            }
-                            if (previewImage) {
-                                previewImage.src = e.target.result;
-                                previewImage.style.display = 'block';
-                                defaultIconPreview.style.display = 'none';
-                            }
-                            imagePreviewContainer.classList.remove('hidden');
-                        }
-                        reader.readAsDataURL(file);
-                    }
-                });
-            }
-
-            // Remove image
-            if (removeImageBtn) {
-                removeImageBtn.addEventListener('click', function() {
-                    imageInput.value = '';
-                    if (imagePreview) {
-                        imagePreview.src = '#';
-                    }
-                    if (previewImage) {
-                        previewImage.src = '#';
-                        previewImage.style.display = 'none';
-                        defaultIconPreview.style.display = 'flex';
-                    }
-                    imagePreviewContainer.classList.add('hidden');
-                });
-            }
-
-            // Order change
-            if (orderInput) {
-                orderInput.addEventListener('input', function() {
-                    if (orderPreview) {
-                        orderPreview.textContent = this.value;
-                    }
-                });
-            }
-
-            // Status change
-            if (isActiveInput) {
-                isActiveInput.addEventListener('change', function() {
-                    if (statusPreview) {
-                        if (this.checked) {
-                            statusPreview.className =
-                                'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300';
-                            statusPreview.textContent = 'Aktif';
-                        } else {
-                            statusPreview.className =
-                                'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300';
-                            statusPreview.textContent = 'Nonaktif';
-                        }
-                    }
-                });
-            }
-
-            // Form validation
-            const form = document.querySelector('form');
-            if (form) {
-                form.addEventListener('submit', function(e) {
-                    const requiredFields = form.querySelectorAll('[required]');
-                    let isValid = true;
-
-                    requiredFields.forEach(field => {
-                        if (!field.value.trim()) {
-                            isValid = false;
-                            field.classList.add('border-rose-500');
-
-                            // Scroll to first error
-                            if (isValid === false) {
-                                field.scrollIntoView({
-                                    behavior: 'smooth',
-                                    block: 'center'
-                                });
-                                field.focus();
-                            }
-                        }
-                    });
-
-                    // Validate image file size (2MB)
-                    if (imageInput.files[0]) {
-                        const maxSize = 2 * 1024 * 1024; // 2MB in bytes
-                        if (imageInput.files[0].size > maxSize) {
-                            isValid = false;
-                            showNotification('Ukuran gambar maksimal 2MB', 'error');
-                        }
-                    }
-
-                    if (!isValid) {
-                        e.preventDefault();
-                    }
-                });
-            }
-
-            function showNotification(message, type = 'info') {
-                // You can integrate with your notification system here
-                alert(message);
-            }
+            // 5. Order Posisi Logic
+            orderInput.addEventListener('input', function() {
+                orderPreview.textContent = this.value || '0';
+            });
         });
     </script>
-
-    <style>
-        /* Custom scrollbar */
-        select::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        select::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 4px;
-        }
-
-        select::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-
-        .dark select::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-
-        .dark select::-webkit-scrollbar-thumb {
-            background: #475569;
-        }
-
-        /* Drag and drop styling */
-        #image:hover {
-            border-color: #10b981;
-        }
-    </style>
 @endpush
