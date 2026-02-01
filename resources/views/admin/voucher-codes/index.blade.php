@@ -111,10 +111,13 @@
                                 </td>
                                 <td class="px-8 py-5">
                                     <code class="text-xs font-mono bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 font-black border border-slate-200 dark:border-slate-700">
-                                        {{ $voucher->code }}
+                                        {{ Str::limit($voucher->code, 20) }}
                                     </code>
                                     @if($voucher->secret)
-                                        <p class="text-[9px] text-slate-400 mt-2 font-bold uppercase tracking-tight">Secret: {{ $voucher->secret }}</p>
+                                        <div class="flex items-center mt-1 text-[9px] text-slate-400 font-bold uppercase tracking-tight">
+                                            <svg class="w-3 h-3 mr-1"><use href="#icon-lock-closed"></use></svg>
+                                            Secret Available
+                                        </div>
                                     @endif
                                 </td>
                                 <td class="px-8 py-5 text-center">
@@ -132,10 +135,13 @@
                                 </td>
                                 <td class="px-8 py-5 text-right">
                                     <div class="flex items-center justify-end space-x-2">
-                                        <a href="{{ route('admin.voucher-codes.edit', $voucher) }}" class="p-2.5 bg-slate-50 dark:bg-slate-900 rounded-2xl text-slate-400 hover:text-blue-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm">
+                                        <a href="{{ route('admin.voucher-codes.show', $voucher) }}" class="p-2.5 bg-slate-50 dark:bg-slate-900 rounded-2xl text-slate-400 hover:text-emerald-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm" title="Lihat Detail">
+                                            <svg class="w-4 h-4"><use href="#icon-eye"></use></svg>
+                                        </a>
+                                        <a href="{{ route('admin.voucher-codes.edit', $voucher) }}" class="p-2.5 bg-slate-50 dark:bg-slate-900 rounded-2xl text-slate-400 hover:text-blue-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm" title="Edit">
                                             <svg class="w-4 h-4"><use href="#icon-pencil"></use></svg>
                                         </a>
-                                        <button onclick="confirmDelete('{{ $voucher->id }}')" class="p-2.5 bg-slate-50 dark:bg-slate-900 rounded-2xl text-slate-400 hover:text-rose-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm">
+                                        <button onclick="confirmDelete('{{ $voucher->id }}')" class="p-2.5 bg-slate-50 dark:bg-slate-900 rounded-2xl text-slate-400 hover:text-rose-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm" title="Hapus">
                                             <svg class="w-4 h-4"><use href="#icon-trash"></use></svg>
                                         </button>
                                     </div>
@@ -167,18 +173,14 @@
                                 <button onclick="navigator.clipboard.writeText('{{ $voucher->code }}')" class="text-emerald-500 text-[10px] font-black uppercase active:scale-90 transition-transform">Copy</button>
                             </div>
                             <code class="text-sm font-black text-slate-700 dark:text-slate-200 block break-all tracking-wider">{{ $voucher->code }}</code>
-                            
-                            @if($voucher->secret)
-                                <div class="mt-4 pt-4 border-t border-slate-200/50 dark:border-slate-700/50 flex flex-col">
-                                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Secret Key</span>
-                                    <span class="text-xs font-mono text-slate-500 truncate">{{ $voucher->secret }}</span>
-                                </div>
-                            @endif
                         </div>
 
                         <div class="flex items-center justify-between">
                             <span class="text-[9px] font-bold text-slate-400 uppercase">Created: {{ $voucher->created_at->format('d M y') }}</span>
                             <div class="flex space-x-2">
+                                <a href="{{ route('admin.voucher-codes.show', $voucher) }}" class="p-3 bg-slate-100 dark:bg-slate-900 rounded-2xl text-slate-500 active:scale-95 transition-all border border-slate-100 dark:border-slate-700">
+                                    <svg class="w-5 h-5"><use href="#icon-eye"></use></svg>
+                                </a>
                                 <a href="{{ route('admin.voucher-codes.edit', $voucher) }}" class="p-3 bg-slate-100 dark:bg-slate-900 rounded-2xl text-slate-500 active:scale-95 transition-all border border-slate-100 dark:border-slate-700">
                                     <svg class="w-5 h-5"><use href="#icon-pencil"></use></svg>
                                 </a>

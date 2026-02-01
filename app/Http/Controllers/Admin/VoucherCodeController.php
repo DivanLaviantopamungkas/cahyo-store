@@ -219,6 +219,13 @@ class VoucherCodeController extends BaseAdminController
             ->with('toast', ['type' => 'success', 'message' => 'Voucher berhasil diupdate.']);
     }
 
+    public function show(VoucherCode $voucherCode)
+    {
+        $voucherCode->load(['product', 'nominal']); 
+        
+        return view('admin.voucher-codes.show', compact('voucherCode'));
+    }
+
     public function destroy(VoucherCode $voucherCode)
     {
         $voucherCode->delete();
