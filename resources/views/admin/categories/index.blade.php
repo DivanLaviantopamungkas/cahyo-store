@@ -112,10 +112,10 @@
                                     <div class="flex justify-end gap-2">
                                         <a href="{{ route('admin.categories.show', $category) }}" class="p-2.5 bg-slate-100 dark:bg-slate-900 rounded-xl text-slate-400 hover:text-sky-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm"><svg class="w-4 h-4"><use href="#icon-eye"></use></svg></a>
                                         <a href="{{ route('admin.categories.edit', $category) }}" class="p-2.5 bg-slate-100 dark:bg-slate-900 rounded-xl text-slate-400 hover:text-blue-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm"><svg class="w-4 h-4"><use href="#icon-pencil-square"></use></svg></a>
-                                        <form action="{{ route('admin.categories.destroy', $category) }}" method="POST" onsubmit="return confirm('Hapus kategori?')">
-                                            @csrf @method('DELETE')
-                                            <button class="p-2.5 bg-slate-100 dark:bg-slate-900 rounded-xl text-slate-400 hover:text-rose-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm"><svg class="w-4 h-4"><use href="#icon-trash"></use></svg></button>
-                                        </form>
+                                        
+                                        <button onclick="confirmDelete('{{ $category->id }}')" class="p-2.5 bg-slate-100 dark:bg-slate-900 rounded-xl text-slate-400 hover:text-rose-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm">
+                                            <svg class="w-4 h-4"><use href="#icon-trash"></use></svg>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -126,7 +126,6 @@
                 </table>
             </div>
 
-            {{-- Mobile App Style View --}}
             <div class="lg:hidden p-4 space-y-4">
                 @foreach($categories as $category)
                 <div class="bg-slate-50/50 dark:bg-slate-900/50 p-5 rounded-[2rem] border border-slate-100 dark:border-slate-700 flex flex-col gap-4 shadow-inner">
@@ -161,6 +160,10 @@
                             <a href="{{ route('admin.categories.show', $category) }}" class="p-3 bg-white dark:bg-slate-800 rounded-2xl text-slate-600 dark:text-slate-400 shadow-sm active:scale-90 transition-transform border border-slate-100 dark:border-slate-700">
                                 <svg class="w-5 h-5"><use href="#icon-eye"></use></svg>
                             </a>
+                            
+                            <button onclick="confirmDelete('{{ $category->id }}')" class="p-3 bg-rose-50 dark:bg-rose-900/20 rounded-2xl text-rose-500 shadow-sm active:scale-90 transition-transform border border-rose-100 dark:border-rose-900/20">
+                                <svg class="w-5 h-5"><use href="#icon-trash"></use></svg>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -179,6 +182,26 @@
             </div>
         </div>
     </div>
+
+    <div id="deleteModal" class="hidden fixed inset-0 z-[60] overflow-y-auto" x-data="{}" x-cloak>
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeDeleteModal()"></div>
+            <div class="relative bg-white dark:bg-slate-800 rounded-[3rem] w-full max-w-sm p-8 shadow-2xl border border-slate-100 dark:border-slate-700 transform transition-all scale-100">
+                <div class="w-20 h-20 bg-rose-50 dark:bg-rose-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-10 h-10 text-rose-500"><use href="#icon-trash"></use></svg>
+                </div>
+                <h3 class="text-xl font-black text-center text-slate-800 dark:text-white mb-2 tracking-tight leading-none uppercase">Hapus Kategori?</h3>
+                <p class="text-center text-slate-500 text-sm mb-8 font-medium">Data kategori ini akan dihapus secara permanen.</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="closeDeleteModal()" class="py-4 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-white font-bold text-xs uppercase tracking-widest transition-all hover:bg-slate-200 dark:hover:bg-slate-600">Batal</button>
+                    <form id="deleteForm" method="POST" class="inline">
+                        @csrf @method('DELETE')
+                        <button type="submit" class="w-full py-4 rounded-2xl bg-rose-500 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-rose-500/20 active:scale-95 transition-all hover:bg-rose-600">Hapus</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -192,6 +215,16 @@
                     document.getElementById('filterForm').submit();
                 }, 500);
             });
+        }
+
+        function confirmDelete(id) {
+            const form = document.getElementById('deleteForm');
+            form.action = "{{ route('admin.categories.destroy', '') }}/" + id;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+        
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
         }
     </script>
 @endpush
