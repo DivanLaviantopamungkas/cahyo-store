@@ -480,8 +480,8 @@ class CheckoutController extends Controller
             $phone = $transactionItem->phone;
 
             // Cari provider Digiflazz
-            $provider = Provider::where('type', 'digiflazz')
-                ->where('status', 'active')
+            $provider = Provider::where('code', 'digiflazz')
+                ->where('is_active', 1)
                 ->first();
 
             if (!$provider) {
@@ -546,19 +546,22 @@ class CheckoutController extends Controller
             } else {
                 // Update sebagai failed
                 $transactionItem->update([
-                    'status' => 'cancelled',
+                    'status' => 'processing',
                     'provider_status' => 'failed',
                     'provider_message' => $message,
                     'raw_response' => json_encode($responseData),
                 ]);
 
-                throw new \Exception('Digiflazz error: ' . $message);
+                Log::error('Digiflazz API returned failed status: ' . $message);
+                // throw new \Exception('Digiflazz error: ' . $message);
             }
         } catch (\Exception $e) {
-            Log::error('Digiflazz processing error: ' . $e->getMessage(), [
-                'transaction_item_id' => $transactionItem->id
+            Log::error('Digiflazz processing error: ' . $e->getMessage());
+
+            $transactionItem->update([
+                'status' => 'processing',
+                'provider_message' => 'System Error: ' . $e->getMessage()
             ]);
-            throw $e;
         }
     }
 
@@ -672,6 +675,13 @@ class CheckoutController extends Controller
     {
         $transactionItem = $transaction->items()->first();
 
+        $targetPhone = $transaction->user->phone ?? $transactionItem->phone;
+
+        if (empty($targetPhone)) {
+            Log::warning('WhatsApp notification skipped: No phone number available for Invoice ' . $transaction->invoice);
+            return;
+        }
+
         // Pesan 1: Konfirmasi pembayaran
         $message1 = "✅ *PEMBAYARAN BERHASIL*\n\n";
         $message1 .= "Invoice: {$transaction->invoice}\n";
@@ -681,7 +691,7 @@ class CheckoutController extends Controller
         $message1 .= "Status: Diproses otomatis\n\n";
         $message1 .= "Mohon tunggu 1-5 menit untuk pengisian.";
 
-        $this->whatsappService->sendMessage($transaction->user->phone, $message1);
+        $this->whatsappService->sendMessage($targetPhone, $message1);
 
         sleep(2);
 
@@ -693,14 +703,14 @@ class CheckoutController extends Controller
             $message2 .= "Waktu: " . now()->format('d/m/Y H:i:s') . "\n\n";
             $message2 .= "Terima kasih telah berbelanja!";
 
-            $this->whatsappService->sendMessage($transaction->user->phone, $message2);
+            $this->whatsappService->sendMessage($targetPhone, $message2);
         } else {
             $message2 = "⚠️ *PENGISIAN GAGAL*\n\n";
             $message2 .= "Status: {$transactionItem->provider_message}\n";
             $message2 .= "Silakan hubungi admin untuk refund.\n\n";
             $message2 .= "WhatsApp Admin: 628xxxxxxxxxx";
 
-            $this->whatsappService->sendMessage($transaction->user->phone, $message2);
+            $this->whatsappService->sendMessage($targetPhone, $message2);
         }
     }
 

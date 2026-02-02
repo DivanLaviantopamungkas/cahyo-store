@@ -124,7 +124,12 @@ class WhatsAppService
             return false;
         }
 
-        $phone = $transaction->user->whatsapp;
+        $phone = $transaction->user->phone ?? $item->phone;
+
+        if (empty($phone)) {
+            Log::warning("⚠️ WhatsApp Voucher Skipped: No phone number for Invoice {$transaction->invoice}");
+            return false;
+        }
 
         // 1️⃣ SEND TEXT
         $this->sendMessage(
@@ -148,23 +153,14 @@ class WhatsAppService
             $transaction->invoice
         );
 
-        if (!$imageUrl) {
-            Log::error('❌ Failed generate barcode image');
-            return true;
+        if ($imageUrl) {
+            $response = Http::timeout(30)->get('https://app.whacenter.com/api/send', [
+                'device_id' => $this->deviceId,
+                'number'    => $this->formatPhone($phone),
+                'image'     => $imageUrl,
+                'message'   => '*TUNJUKKAN BARCODE INI KE KASIR*'
+            ]);
         }
-
-        // 3️⃣ SEND IMAGE WA (DIRECT URL)
-        $response = Http::timeout(30)->get('https://app.whacenter.com/api/send', [
-            'device_id' => $this->deviceId,
-            'number'    => $this->formatPhone($phone),
-            'image'     => $imageUrl,
-            'message'   => '*TUNJUKKAN BARCODE INI KE KASIR*'
-        ]);
-
-        Log::info('Whacenter Image', [
-            'image'    => $imageUrl,
-            'response' => $response->json()
-        ]);
 
         return true;
     }

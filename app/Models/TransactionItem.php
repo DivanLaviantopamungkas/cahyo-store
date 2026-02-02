@@ -21,6 +21,8 @@ class TransactionItem extends Model
         'price',
         'total',
         'status',              // pending/processing/completed/cancelled
+        'phone',
+        'customer_id',
 
         // ✅ VOUCHER FIELDS (baru ditambah)
         'voucher_code',
